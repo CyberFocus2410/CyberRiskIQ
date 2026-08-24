@@ -2,10 +2,11 @@
 """
 CyberRiskIQ Compliance Engine
 Maps active and simulated defensive controls to regulatory cybersecurity frameworks:
-- NIST Cybersecurity Framework (CSF)
+- NIST Cybersecurity Framework (CSF 2.0)
 - ISO/IEC 27001
 - RBI Cyber Security Framework
 - SEBI Cybersecurity and Cyber Resilience Framework (CSCRF)
+- CIS Critical Security Controls (v8)
 """
 from typing import List, Dict, Any, Optional
 
@@ -78,6 +79,28 @@ FRAMEWORK_MAPPINGS = {
             {"code": "SEBI-3.4", "name": "Continuous monitoring, detection alerts, and SOC logs", "status": "Compliant", "gap": "None"},
             {"code": "SEBI-3.5", "name": "Endpoint response agents and endpoint detection capability", "status": "Compliant", "gap": "None"},
             {"code": "SEBI-3.6", "name": "Robust backup management and immutable storage policy", "status": "Compliant", "gap": "None"}
+        ]
+    },
+    "cis": {
+        "name": "CIS Critical Security Controls (v8)",
+        "mapping": {
+            "CIS-1: Inventory of Assets": ["patching"],
+            "CIS-3: Data Protection": ["backup"],
+            "CIS-6: Access Control": ["mfa"],
+            "CIS-7: Vulnerability Management": ["patching"],
+            "CIS-8: Audit Log Monitoring": ["monitoring"],
+            "CIS-10: Malware Defenses": ["edr"],
+            "CIS-12: Network Infrastructure": ["segmentation"],
+            "CIS-17: Incident Response": ["edr", "monitoring"]
+        },
+        "controls": [
+            {"code": "CIS-1.1", "name": "Detailed Enterprise Asset Inventory", "status": "Compliant", "gap": "None"},
+            {"code": "CIS-3.3", "name": "Encrypt Sensitive Data at Rest", "status": "Compliant", "gap": "None"},
+            {"code": "CIS-6.3", "name": "Multi-Factor Authentication on Privileged Access", "status": "Partial", "gap": "Service accounts without MFA"},
+            {"code": "CIS-7.4", "name": "Automated Patch Deployment Pipelines", "status": "Partial", "gap": "Monthly latency window"},
+            {"code": "CIS-8.2", "name": "Aggregate Security Event Audit Logs", "status": "Compliant", "gap": "None"},
+            {"code": "CIS-10.1", "name": "Centralized Anti-Malware / EDR Agents", "status": "Compliant", "gap": "None"},
+            {"code": "CIS-12.2", "name": "Boundary Segmentation and Zero-Trust Network", "status": "Partial", "gap": "Database segment isolation in progress"}
         ]
     }
 }
