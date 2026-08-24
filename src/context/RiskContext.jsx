@@ -328,12 +328,23 @@ export const RiskProvider = ({ children }) => {
   };
 
   const calculateAssetFinancialImpact = (asset) => {
+    // Scaling factors based on company size parameters
+    const revenueScaler = org.annualRevenue / 500000000; // relative to ₹50 Crore baseline
+    const employeeScaler = org.employees / 1200; // relative to 1200 employee baseline
+
     // Availability impact (Downtime 4 hours average incident length)
-    const downtimeImpact = asset.downtimeCostPerHour * 4;
-    // Data impact
-    const dataImpact = asset.recordsExposed * asset.costPerRecord;
-    // Sum all categories
-    return downtimeImpact + dataImpact + asset.regulatoryPenalty + asset.recoveryCost + asset.reputationFactor;
+    const downtimeImpact = (asset.downtimeCostPerHour * revenueScaler) * 4;
+    
+    // Data impact (Records exposed scale with employee count)
+    const recordsExposedSim = Math.round(asset.recordsExposed * employeeScaler);
+    const dataImpact = recordsExposedSim * asset.costPerRecord;
+
+    // Regulatory, recovery, and reputation costs scale with business scale
+    const regulatoryFines = asset.regulatoryPenalty * revenueScaler;
+    const recoveryCosts = asset.recoveryCost * employeeScaler;
+    const reputationCosts = asset.reputationFactor * revenueScaler;
+
+    return Math.round(downtimeImpact + dataImpact + regulatoryFines + recoveryCosts + reputationCosts);
   };
 
   const calculateAssetEAL = (asset, controlsOverride = null, exposureOverride = null) => {
