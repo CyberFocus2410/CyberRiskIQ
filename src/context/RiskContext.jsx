@@ -318,7 +318,13 @@ export const RiskProvider = ({ children }) => {
 
     // Risk score out of 100
     const rawScore = (threatLikelihood * 0.5 + criticalityWeight * 0.3 + controlGap * 0.2) * 100;
-    return Math.round(Math.min(100, Math.max(10, rawScore)));
+
+    // Scale based on Risk Appetite (Low appetite means higher perceived risk score, High appetite means lower perceived risk score)
+    let appetiteMultiplier = 1.0;
+    if (org.riskAppetite === 'Low') appetiteMultiplier = 1.25;
+    else if (org.riskAppetite === 'High') appetiteMultiplier = 0.75;
+
+    return Math.round(Math.min(100, Math.max(10, rawScore * appetiteMultiplier)));
   };
 
   const calculateAssetFinancialImpact = (asset) => {
