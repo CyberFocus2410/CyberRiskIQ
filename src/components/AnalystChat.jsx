@@ -141,8 +141,8 @@ export default function AnalystChat() {
         `;
       } 
       // 4. Security Assessment Engine Findings
-      else if (normalized.includes('assessment') || normalized.includes('pentest') || normalized.includes('strix') || normalized.includes('poc') || normalized.includes('telemetry')) {
-        const secFindings = findings.filter(f => f.source.includes('Security Assessment') || f.source.includes('Pentest') || f.source.includes('Strix'));
+      else if (normalized.includes('assessment') || normalized.includes('pentest') || normalized.includes('probe') || normalized.includes('poc') || normalized.includes('telemetry')) {
+        const secFindings = findings.filter(f => f.source.includes('Security Assessment') || f.source.includes('Pentest'));
         const pocCount = secFindings.filter(f => f.pocAttached || f.poc_attached).length;
         botResponse = `
           CyberRiskIQ integrates the <b>AI Security Assessment Engine</b> for autonomous vulnerability probing and proof-of-concept validation.<br/><br/>

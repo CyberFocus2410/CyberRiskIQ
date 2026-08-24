@@ -71,6 +71,3 @@ export function generateSecurityAssessmentPdf(results, runId) {
 
   return doc.output('arraybuffer');
 }
-
-// Backwards compatibility alias
-export const generateStrixPdf = generateSecurityAssessmentPdf;

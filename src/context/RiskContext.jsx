@@ -357,35 +357,105 @@ const CONTROLS_LIBRARY = [
 ];
 
 export const RiskProvider = ({ children }) => {
-  const [org, setOrg] = useState({
-    name: 'FinSecure Bank',
-    industry: 'Banking & Financial Services',
-    employees: 1200,
-    annualRevenue: 500000000, // ₹50 Crore
-    budget: 3500000, // ₹35 Lakh
-    riskAppetite: 'Medium',
-    businessUnits: DEFAULT_BUSINESS_UNITS
+  // Initialize state from persistent localStorage if available
+  const [org, setOrg] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cyberriskiq_org');
+      return saved ? JSON.parse(saved) : {
+        name: 'FinSecure Bank',
+        industry: 'Banking & Financial Services',
+        employees: 1200,
+        annualRevenue: 500000000, // ₹50 Crore
+        budget: 3500000, // ₹35 Lakh
+        riskAppetite: 'Medium',
+        businessUnits: DEFAULT_BUSINESS_UNITS
+      };
+    } catch {
+      return {
+        name: 'FinSecure Bank',
+        industry: 'Banking & Financial Services',
+        employees: 1200,
+        annualRevenue: 500000000,
+        budget: 3500000,
+        riskAppetite: 'Medium',
+        businessUnits: DEFAULT_BUSINESS_UNITS
+      };
+    }
   });
 
-  const [assets, setAssets] = useState(generateEnterpriseAssets);
-  const [findings, setFindings] = useState(INITIAL_FINDINGS);
+  const [assets, setAssets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cyberriskiq_assets');
+      return saved ? JSON.parse(saved) : generateEnterpriseAssets();
+    } catch {
+      return generateEnterpriseAssets();
+    }
+  });
+
+  const [findings, setFindings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cyberriskiq_findings');
+      return saved ? JSON.parse(saved) : INITIAL_FINDINGS;
+    } catch {
+      return INITIAL_FINDINGS;
+    }
+  });
+
   const [darkMode, setDarkMode] = useState(true);
 
-  const [ingestionHistory, setIngestionHistory] = useState([
-    { id: 'BCH-001', source: 'CyberRiskIQ AI Security Assessment', timestamp: '2026-08-24T14:30:00Z', count: 3, status: 'Success' },
-    { id: 'BCH-002', source: 'Internal Scanner', timestamp: '2026-08-20T08:15:00Z', count: 3, status: 'Success' }
-  ]);
-
-  const [auditLogs, setAuditLogs] = useState([
-    {
-      id: 'AUD-001',
-      timestamp: new Date().toISOString(),
-      user: 'secops@finsecure.bank',
-      action: 'PLATFORM_INITIALIZATION',
-      entity: 'FinSecure Bank',
-      details: 'Initialized 52 assets across 6 business units.'
+  const [ingestionHistory, setIngestionHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cyberriskiq_ingestion_history');
+      return saved ? JSON.parse(saved) : [
+        { id: 'BCH-001', source: 'CyberRiskIQ AI Security Assessment', timestamp: '2026-08-24T14:30:00Z', count: 3, status: 'Success' },
+        { id: 'BCH-002', source: 'Internal Scanner', timestamp: '2026-08-20T08:15:00Z', count: 3, status: 'Success' }
+      ];
+    } catch {
+      return [
+        { id: 'BCH-001', source: 'CyberRiskIQ AI Security Assessment', timestamp: '2026-08-24T14:30:00Z', count: 3, status: 'Success' }
+      ];
     }
-  ]);
+  });
+
+  const [auditLogs, setAuditLogs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cyberriskiq_audit_logs');
+      return saved ? JSON.parse(saved) : [
+        {
+          id: 'AUD-001',
+          timestamp: new Date().toISOString(),
+          user: 'secops@finsecure.bank',
+          action: 'PLATFORM_INITIALIZATION',
+          entity: 'FinSecure Bank',
+          details: 'Initialized 52 assets across 6 business units.'
+        }
+      ];
+    } catch {
+      return [
+        {
+          id: 'AUD-001',
+          timestamp: new Date().toISOString(),
+          user: 'secops@finsecure.bank',
+          action: 'PLATFORM_INITIALIZATION',
+          entity: 'FinSecure Bank',
+          details: 'Initialized 52 assets across 6 business units.'
+        }
+      ];
+    }
+  });
+
+  // Persistent storage synchronizer
+  useEffect(() => {
+    try {
+      localStorage.setItem('cyberriskiq_org', JSON.stringify(org));
+      localStorage.setItem('cyberriskiq_assets', JSON.stringify(assets));
+      localStorage.setItem('cyberriskiq_findings', JSON.stringify(findings));
+      localStorage.setItem('cyberriskiq_ingestion_history', JSON.stringify(ingestionHistory));
+      localStorage.setItem('cyberriskiq_audit_logs', JSON.stringify(auditLogs));
+    } catch (err) {
+      console.warn('LocalStorage persistence warning:', err);
+    }
+  }, [org, assets, findings, ingestionHistory, auditLogs]);
 
   // Scenario Simulator Overlays
   const [simulatedControls, setSimulatedControls] = useState({
@@ -726,7 +796,7 @@ export const RiskProvider = ({ children }) => {
     }
   };
 
-  // Compliance calculations
+  // Compliance calculations (NIST, ISO, RBI, SEBI, CIS Controls)
   const getCompliancePosture = () => {
     const nistMapping = {
       'Identify (ID.AM)': ['mfa', 'patching'],
@@ -762,6 +832,17 @@ export const RiskProvider = ({ children }) => {
       'Sec 3.6: Recovery & Backups': ['backup']
     };
 
+    const cisMapping = {
+      'CIS-1: Inventory & Control of Assets': ['patching'],
+      'CIS-3: Data Protection & Encryption': ['backup'],
+      'CIS-6: Access Control Management': ['mfa'],
+      'CIS-7: Continuous Vulnerability Management': ['patching'],
+      'CIS-8: Audit Log & SIEM Monitoring': ['monitoring'],
+      'CIS-10: Malware Defenses & EDR': ['edr'],
+      'CIS-12: Network Infrastructure & Segmentation': ['segmentation'],
+      'CIS-17: Incident Response Management': ['edr', 'monitoring']
+    };
+
     const calculateFrameworkCoverage = (mapping) => {
       let totalItems = 0;
       let totalEffectiveSum = 0;
@@ -785,7 +866,8 @@ export const RiskProvider = ({ children }) => {
       nist: calculateFrameworkCoverage(nistMapping),
       iso: calculateFrameworkCoverage(isoMapping),
       rbi: calculateFrameworkCoverage(rbiMapping),
-      sebi: calculateFrameworkCoverage(sebiMapping)
+      sebi: calculateFrameworkCoverage(sebiMapping),
+      cis: calculateFrameworkCoverage(cisMapping)
     };
   };
 

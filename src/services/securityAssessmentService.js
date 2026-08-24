@@ -51,7 +51,8 @@ export async function runSecurityAssessment(target, options = {}) {
       const flags = [];
       if (options.quick) flags.push('--scan-mode', 'quick');
       flags.push('-n');
-      const cmd = `strix ${flags.join(' ')} --target "${target}" --output json --output-dir "${runDir}"`;
+      const assessmentBin = process.env.SECURITY_ASSESSMENT_BIN || 'security-assessment-agent';
+      const cmd = `${assessmentBin} ${flags.join(' ')} --target "${target}" --output json --output-dir "${runDir}"`;
 
       const logStream = (await fs.open(logPath, 'a')).createWriteStream();
       const child = exec(cmd, { env: process.env }, async (error, stdout, stderr) => {

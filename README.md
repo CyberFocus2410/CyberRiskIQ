@@ -6,16 +6,16 @@ CyberRiskIQ continuously transforms cybersecurity telemetry and validated securi
 
 ---
 
-## 🎯 Executive Summary & Philosophy
+## 🎯 Executive Summary & Core Philosophy
 
-Traditional cybersecurity programs communicate risk using qualitative labels (*Low*, *Medium*, *High*) or technical metrics (*CVSS*). While useful for security practitioners, these metrics fail to answer fundamental board and executive questions:
+Traditional cybersecurity programs communicate risk using qualitative labels (*Low*, *Medium*, *High*) or technical metrics (*CVSS*). While useful for vulnerability management, these metrics fail to answer fundamental board and executive questions:
 - *How much financial cyber risk does the enterprise carry right now?*
 - *Which assets and business units contribute the largest annualized liability?*
 - *Which vulnerabilities contribute most to Expected Annual Loss (EAL)?*
 - *What is the quantifiable financial penalty if remediation is delayed by 30 days?*
 - *How should a finite cybersecurity budget be allocated to yield maximal risk reduction (ROSI)?*
 
-CyberRiskIQ solves this communication and decision-making gap through a **continuous, deterministic, and traceable cyber-risk intelligence chain**:
+CyberRiskIQ bridges this communication and decision-making gap through a **continuous, deterministic, and traceable cyber-risk intelligence chain**:
 
 ```mermaid
 flowchart LR
@@ -33,7 +33,7 @@ flowchart LR
     L --> M[Compliance & Audit]
 ```
 
-CyberRiskIQ is **not merely** a vulnerability scanner, a standalone penetration tester, an isolated compliance scorecard, or an LLM chatbot. It is an **integrated decision intelligence platform** that connects technical security telemetry to business impact, financial liabilities, and portfolio optimization.
+CyberRiskIQ is **not merely** a vulnerability scanner, a standalone penetration tester, an isolated compliance scorecard, or an LLM chatbot. It is an **integrated cyber-risk decision intelligence platform** that connects technical security telemetry to business impact, financial liabilities, and portfolio optimization.
 
 ---
 
@@ -78,10 +78,12 @@ $$\text{Potential Loss} = \text{Downtime Loss} + \text{Data Breach Cost} + \text
 - **Incident Recovery**: Forensic investigation, crisis containment, and technical restoration costs
 - **Reputation Factor**: Customer churn and market impact
 
-#### B. Annual Incident Probability Mapping
+#### B. Configurable Incident Probability Calibration Model
 Linear probability scaling mapped deterministically from asset risk score:
 $$\text{Probability } P = 0.01 + (\text{Risk Score} - 10) \times \left( \frac{0.35 - 0.01}{100 - 10} \right) = 0.01 + (\text{Risk Score} - 10) \times \frac{0.34}{90}$$
 *(Score 10 corresponds to 1.0% annual probability; Score 100 corresponds to 35.0% annual probability).*
+
+> **Model Assumption**: This linear probability calibration ($10 \rightarrow 1\%, 100 \rightarrow 35\%$) is a transparent, configurable decision-modeling assumption for the MVP rather than an actuarial statistical claim.
 
 #### C. Expected Annual Loss (EAL)
 $$\text{EAL} = \text{Annual Incident Probability } (P) \times \text{Potential Loss } (L)$$
@@ -90,8 +92,6 @@ $$\text{EAL} = \text{Annual Incident Probability } (P) \times \text{Potential Lo
 - High-Criticality Payment API (Risk Score = 90) $\rightarrow$ Annual Probability = 31.2%
 - Single-Incident Potential Loss = ₹4.33 Crore
 - **Asset Expected Annual Loss (EAL) = ₹1.35 Crore / year**
-
-*Note: Financial loss estimates are configurable enterprise parameters designed for executive decision-making and risk comparison, rather than actuarial insurance warranties.*
 
 ---
 
@@ -106,7 +106,7 @@ Every metric across dashboards and financial ledgers is fully transparent. Click
 ---
 
 ### 5. Grounded AI Cyber Risk Analyst
-A conversational risk copilot grounded strictly in the live organizational database, control ratings, and security telemetry.
+A conversational risk copilot grounded strictly in the live organizational inventory, control assessments, and security telemetry.
 
 - **Zero Hallucination**: Financial numbers, probability rates, EAL deltas, and budget recommendations are computed directly by deterministic application logic rather than invented by the language model.
 - **Supported Query Intents**:
@@ -138,15 +138,18 @@ $$\max \sum_{i=1}^n x_i \cdot \Delta \text{EAL}_i \quad \text{subject to} \quad 
   $$\text{ROSI} = \left[ \frac{\text{Total EAL Reduction} - \text{Total Implementation Cost}}{\text{Total Implementation Cost}} \right] \times 100$$
 - **Knapsack Spend Frontier Curve**: Dynamic chart plotting residual EAL against increasing budget increments, clearly highlighting the **Optimal Spend Zone** and diminishing returns.
 
+> **Optimizer Assumption**: The MVP computes individual control benefits additively against baseline state. Modeling higher-order nonlinear control interaction effects is documented under future scope.
+
 ---
 
-### 8. Regulatory Compliance Intelligence & Platform Audit Trail
-- **Multi-Framework Mapping**: Evaluates active security controls against specific regulatory clauses:
-  - **NIST Cybersecurity Framework (CSF)**: Identify, Protect, Detect, Respond, Recover.
+### 8. Framework Alignment & Platform Audit Trail
+- **Multi-Framework Alignment & Control Coverage**: Evaluates active security controls against specific regulatory clauses:
+  - **NIST Cybersecurity Framework (CSF 2.0)**: Identify, Protect, Detect, Respond, Recover.
   - **ISO/IEC 27001 (Annex A)**: A.9 Access, A.12 Ops, A.14 Dev, A.17 Continuity, A.18 Compliance.
   - **RBI Cyber Security Framework (CSF)**: Baseline controls for Indian commercial banking.
   - **SEBI CSCRF**: Cyber security and resilience framework for securities markets.
-- **Platform Audit Trail**: Immutable log tracking user interventions, control adjustments, data ingestions, and what-if simulation triggers.
+  - **CIS Critical Security Controls (v8)**: Asset inventory, data protection, access management, vulnerability response.
+- **Platform Audit Trail**: Immutable log tracking user interventions, control adjustments, data ingestions, and what-if simulation triggers. Persisted to `localStorage` and backend database.
 - **Multi-Tier Reporting**: Exports one-click Executive Briefings, Technical Analysis reports, and Compliance Audit packs via PDF.
 
 ---
@@ -164,7 +167,7 @@ graph TD
         CHAT[Grounded AI Risk Analyst]
         SIM[What-if Scenario Simulator]
         OPT[Knapsack Investment Optimizer]
-        COMP[Compliance Frameworks & Audit Trail]
+        COMP[Framework Alignment & Audit Trail]
         SEC_CTL[AI Security Assessment Widget]
     end
 
@@ -176,45 +179,42 @@ graph TD
         CC[Compliance Coverage Mapper]
         AC[Grounded Intent Processor]
         AUDIT[Audit Trail Recorder]
+        PERSIST[(LocalStorage Persistence)]
     end
 
     subgraph BACKEND ["FastAPI Application & Domain Services (Python)"]
-        API[FastAPI REST Router /api/v1/*]
+        API[FastAPI REST Router /api/* & /api/v1/*]
         PY_RISK[risk_engine.py]
         PY_FIN[financial_engine.py]
         PY_OPT[optimization_engine.py]
         PY_SCEN[scenario_engine.py]
         PY_COMP[compliance_engine.py]
         PY_AI[ai_analyst.py]
-    end
-
-    subgraph DATA_LAYER ["Data & Persistence Layer"]
         DB[(SQLite / PostgreSQL via SQLAlchemy)]
-        SEED[FinSecure Bank Dataset - 52 Assets / 6 BUs]
     end
 
     UI --> CLIENT_ENGINE
-    UI -. Optional API Sync .-> API
+    CLIENT_ENGINE --> PERSIST
+    UI -. Optional API Backend Sync .-> API
     API --> PY_RISK & PY_FIN & PY_OPT & PY_SCEN & PY_COMP & PY_AI
     API --> DB
-    SEED --> DB
 ```
 
 ---
 
-## 💻 Technology Stack
+## 💻 Technology Stack & Feature Status
 
-| Layer | Technology | Usage & Purpose |
-|---|---|---|
-| **Frontend Framework** | **React 18** | Modular component-driven user interface |
-| **Build & Tooling** | **Vite** | Modern, high-performance web bundler and dev server |
-| **Styling & Theme** | **Tailwind CSS** | Clean dark/light theme, typography, responsive layout |
-| **Data Visualization** | **Apache ECharts** (`echarts-for-react`) | Interactive EAL curves, BU distribution pies, spend frontiers |
-| **Icons & UI Assets** | **Lucide React** | Consistent, modern enterprise iconography |
-| **Document Generation** | **jsPDF** & Browser Print API | Exporting Executive Briefings and Compliance Audit Reports |
-| **Backend Framework** | **Python 3.10+ / FastAPI** | High-performance asynchronous REST API backend |
-| **ORM & Database** | **SQLAlchemy** (SQLite / PostgreSQL) | Relational persistence for Orgs, Assets, Findings, Controls |
-| **Server Engine** | **Uvicorn** | ASGI server for Python backend services |
+| Component | Technology | Implementation Status | Purpose |
+|---|---|---|---|
+| **Frontend UI** | React 18, Tailwind CSS | **Implemented** | Interactive single-page application |
+| **Bundler & Server** | Vite 8 | **Implemented** | Development server & production bundler |
+| **Data Visualization** | Apache ECharts (`echarts-for-react`) | **Implemented** | Dynamic EAL curves, spend frontiers, BU breakdown charts |
+| **State & Calculations** | `RiskContext.jsx` + LocalStorage | **Implemented** | Reactive client-side deterministic risk & financial engine |
+| **Icons & Design** | Lucide React | **Implemented** | Clean enterprise iconography |
+| **PDF Generation** | jsPDF + Print API | **Implemented** | Client-side export of executive and technical reports |
+| **Backend REST API** | Python 3.10+ / FastAPI | **Implemented** | Full `/api/v1/*` and `/api/*` endpoints matching domain logic |
+| **ORM & Relational DB** | SQLAlchemy (SQLite / PostgreSQL) | **Implemented** | Relational schemas for Orgs, Assets, Findings, Controls, Logs |
+| **Testing Suite** | Node.js Test Suite (`tests/test_engines.js`) | **Implemented** | Automated unit tests for risk, EAL, knapsack, & compliance |
 
 ---
 
@@ -234,9 +234,9 @@ CyberRiskIQ/
 │   │   │   ├── financial_engine.py # Loss breakdown, incident probability, & EAL
 │   │   │   ├── optimization_engine.py # 0/1 Knapsack DP solver & ROSI calculations
 │   │   │   ├── scenario_engine.py# What-if state cloning & simulation deltas
-│   │   │   ├── compliance_engine.py # NIST, ISO, RBI, SEBI framework coverage
+│   │   │   ├── compliance_engine.py # NIST, ISO, RBI, SEBI, CIS framework coverage
 │   │   │   └── ai_analyst.py     # Grounded Q&A intent classification & resolution
-│   │   └── main.py               # FastAPI server application with /api/v1 endpoints
+│   │   └── main.py               # FastAPI server application with /api/v1 & /api endpoints
 │   ├── requirements.txt          # Python dependencies
 │   └── run.py                    # Direct backend startup runner
 ├── src/
@@ -256,7 +256,7 @@ CyberRiskIQ/
 │   ├── context/
 │   │   └── RiskContext.jsx       # Central reactive state, calculation engines, audit log
 │   ├── services/
-│   │   ├── securityAssessmentService.js # Autonomous penetration testing service
+│   │   ├── securityAssessmentService.js # Autonomous security assessment engine service
 │   │   └── reportGenerator.js    # PDF export utilities
 │   ├── App.jsx                   # Main layout, sidebar navigation, dark mode
 │   ├── main.jsx                  # React application entrypoint
@@ -265,6 +265,7 @@ CyberRiskIQ/
 │   └── test_engines.js           # Automated verification test suite for domain math
 ├── vite.config.js                # Vite configuration with /api/assessment middleware
 ├── package.json                  # Frontend scripts & NPM dependencies
+├── .env.example                  # Environment configuration template
 └── README.md                     # Comprehensive platform documentation
 ```
 
@@ -295,7 +296,7 @@ To enable realistic enterprise evaluation out of the box, CyberRiskIQ includes a
 7. **Ask AI Risk Analyst**: Query the grounded AI assistant (*"What is our highest financial risk?"*, *"Which business unit has the highest EAL?"*).
 8. **What-if Scenario Simulator**: Toggle security hypotheses (e.g., Enforce MFA, Delay Remediation +30 Days) and observe before/after EAL deltas.
 9. **Security Investment Optimizer**: Enter a custom budget (e.g., ₹30 Lakh), apply Force-In/Out constraints, and inspect the recommended knapsack portfolio and ROSI percentage.
-10. **Compliance & Audit**: Inspect regulatory compliance scores (NIST, ISO 27001, RBI, SEBI), review the platform audit trail, and export an Executive PDF report.
+10. **Framework Alignment & Audit**: Inspect regulatory alignment scores (NIST, ISO 27001, RBI, SEBI, CIS), review the platform audit trail, and export an Executive PDF report.
 
 ---
 
@@ -303,7 +304,7 @@ To enable realistic enterprise evaluation out of the box, CyberRiskIQ includes a
 
 ### Prerequisites
 - Node.js (v18.0+)
-- Python (v3.10+) *(for optional backend service)*
+- Python (v3.10+) *(for backend service)*
 
 ### 1. Frontend Setup & Launch
 ```bash
@@ -346,24 +347,27 @@ node tests/test_engines.js
 - **Probability Mapping**: Score 10 maps to 1.0%; Score 100 maps to 35.0%.
 - **Loss Breakdown & EAL**: Verified 5-parameter potential loss and EAL product.
 - **0/1 Knapsack Solver**: Solved dynamic programming budget constraints and confirmed override lock-in handling.
+- **Scenario Deltas**: Verified before/after state cloning and $+30\text{ Days}$ delay penalty calculation.
+- **Framework Alignment**: Verified mappings for NIST, ISO, RBI, SEBI, and CIS Controls v8.
 
 ---
 
-## 🗺️ Project Scope & Future Roadmap
+## 🗺️ Implementation Scope & Future Roadmap
 
-- [x] **MVP Scope (SIH 2026)**:
-  - React + Vite standalone decision platform with Apache ECharts.
+- [x] **Implemented in Repository (SIH 2026)**:
+  - React 18 + Vite standalone decision platform with Apache ECharts.
+  - Client-side LocalStorage persistence across page refreshes.
   - Deterministic risk engine & 5-factor financial loss quantification.
   - Interactive financial explainability modal & full traceability chain.
   - AI Security Assessment Engine with dual Demonstration and Live execution modes.
   - 0/1 Knapsack investment optimizer with ROSI calculation and spend curve.
   - Grounded AI Risk Analyst with zero-hallucination structured intent handling.
-  - Multi-framework compliance mapping (NIST, ISO 27001, RBI, SEBI) & Audit trail.
-  - FastAPI domain backend architecture with SQLAlchemy persistence.
-- [ ] **Future Roadmap (Post-Hackathon)**:
-  - Direct read-only connectors for Cloud Security Posture Managers (AWS Security Hub, GCP Security Command Center).
-  - Webhook integration for CI/CD pipeline blocking based on quantified EAL threshold breaches.
-  - Monte Carlo simulation engine with beta-PERT distribution modeling for actuarial underwriting analysis.
+  - Multi-framework alignment mapping (NIST, ISO 27001, RBI, SEBI, CIS Controls) & Audit trail.
+  - FastAPI domain backend architecture with SQLAlchemy persistence and `/api/*` routes.
+- [ ] **Future Scope / Post-Hackathon**:
+  - Higher-order control interaction modeling in the knapsack optimizer (non-linear overlapping efficacy).
+  - Direct read-only connectors for Cloud Security Posture Managers (AWS Security Hub, GCP SCC).
+  - Actuarial Monte Carlo simulation engine with beta-PERT distribution curves for loss modeling.
 
 ---
 
@@ -371,7 +375,7 @@ node tests/test_engines.js
 
 CyberRiskIQ is designed for authorized cyber-risk modeling, defensive investment optimization, research, and authorized security assessments. Live assessment capabilities must only be executed against infrastructure, applications, and APIs where explicit written consent has been obtained. 
 
-Financial values generated by the platform represent structured mathematical risk models intended to assist executive leadership in resource allocation, and do not constitute legal or actuarial warranties.
+Financial values and probability figures generated by the platform represent structured mathematical risk models intended to assist executive leadership in resource allocation, and do not constitute legal or actuarial warranties.
 
 ---
 

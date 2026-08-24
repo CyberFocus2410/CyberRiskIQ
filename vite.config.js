@@ -14,8 +14,8 @@ function securityAssessmentApiPlugin() {
         const parsedUrl = new URL(reqUrl, 'http://localhost');
         const pathname = parsedUrl.pathname;
 
-        // Security Assessment Scan endpoint (POST /api/assessment/scan or legacy POST /api/strix/scan)
-        if ((pathname === '/api/assessment/scan' || pathname === '/api/strix/scan') && req.method === 'POST') {
+        // Security Assessment Scan endpoint (POST /api/assessment/scan)
+        if (pathname === '/api/assessment/scan' && req.method === 'POST') {
           let body = '';
           req.on('data', chunk => (body += chunk));
           req.on('end', async () => {
@@ -34,17 +34,15 @@ function securityAssessmentApiPlugin() {
           return;
         }
 
-        // Log retrieval (GET /api/assessment/log/:runId or GET /api/strix/log/:runId)
-        const logMatch = pathname.match(/^\/api\/(?:assessment|strix)\/log\/(.+)$/);
+        // Log retrieval (GET /api/assessment/log/:runId)
+        const logMatch = pathname.match(/^\/api\/assessment\/log\/(.+)$/);
         if (logMatch && req.method === 'GET') {
           const runId = logMatch[1];
           const logPath = path.resolve('assessment_runs', runId, 'run.log');
-          const legacyLogPath = path.resolve('strix_runs', runId, 'run.log');
-          const finalPath = fs.existsSync(logPath) ? logPath : legacyLogPath;
 
-          if (fs.existsSync(finalPath)) {
+          if (fs.existsSync(logPath)) {
             try {
-              const data = fs.readFileSync(finalPath, 'utf8');
+              const data = fs.readFileSync(logPath, 'utf8');
               res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
               res.end(data);
               return;
@@ -60,20 +58,18 @@ function securityAssessmentApiPlugin() {
           }
         }
 
-        // Result retrieval (GET /api/assessment/result/:runId or GET /api/strix/result/:runId)
-        const resultMatch = pathname.match(/^\/api\/(?:assessment|strix)\/result\/(.+)$/);
+        // Result retrieval (GET /api/assessment/result/:runId)
+        const resultMatch = pathname.match(/^\/api\/assessment\/result\/(.+)$/);
         if (resultMatch && req.method === 'GET') {
           const runId = resultMatch[1];
           const resultsPath = path.resolve('assessment_runs', runId, 'results.json');
-          const legacyResultsPath = path.resolve('strix_runs', runId, 'results.json');
-          const finalPath = fs.existsSync(resultsPath) ? resultsPath : legacyResultsPath;
 
-          if (fs.existsSync(finalPath)) {
+          if (fs.existsSync(resultsPath)) {
             try {
-              const data = fs.readFileSync(finalPath, 'utf8');
+              const data = fs.readFileSync(resultsPath, 'utf8');
               const json = JSON.parse(data);
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ success: true, resultsPath: finalPath, results: json }));
+              res.end(JSON.stringify({ success: true, resultsPath, results: json }));
               return;
             } catch (err) {
               res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -81,24 +77,21 @@ function securityAssessmentApiPlugin() {
               return;
             }
           } else {
-            // In progress
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: false, status: 'assessing' }));
             return;
           }
         }
 
-        // PDF report generation (GET /api/assessment/report/:runId or GET /api/strix/report/:runId)
-        const pdfMatch = pathname.match(/^\/api\/(?:assessment|strix)\/report\/(.+)$/);
+        // PDF report generation (GET /api/assessment/report/:runId)
+        const pdfMatch = pathname.match(/^\/api\/assessment\/report\/(.+)$/);
         if (pdfMatch && req.method === 'GET') {
           const runId = pdfMatch[1];
           const resultsPath = path.resolve('assessment_runs', runId, 'results.json');
-          const legacyResultsPath = path.resolve('strix_runs', runId, 'results.json');
-          const finalPath = fs.existsSync(resultsPath) ? resultsPath : legacyResultsPath;
 
-          if (fs.existsSync(finalPath)) {
+          if (fs.existsSync(resultsPath)) {
             try {
-              const results = await readAssessmentResults(finalPath);
+              const results = await readAssessmentResults(resultsPath);
               const pdfBytes = generateSecurityAssessmentPdf(results, runId);
               res.writeHead(200, {
                 'Content-Type': 'application/pdf',

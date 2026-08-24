@@ -113,9 +113,8 @@ def query_ai_risk_analyst(
         structured_data = opt
 
     # Intent 4: Security Assessment & Validation Findings
-    elif any(k in normalized for k in ["pentest", "assessment", "telemetry", "poc", "exploit", "strix"]):
-        intent = "security_assessment"
-        sec_findings = [f for f in findings if "assessment" in (f.get("source") or "").lower() or "pentest" in (f.get("source") or "").lower() or "strix" in (f.get("source") or "").lower()]
+    elif any(k in normalized for k in ["pentest", "assessment", "telemetry", "poc", "exploit", "probe"]):
+        sec_findings = [f for f in findings if "assessment" in (f.get("source") or "").lower() or "pentest" in (f.get("source") or "").lower()]
         poc_count = sum(1 for f in sec_findings if f.get("poc_attached") or f.get("pocAttached"))
 
         response_text = (
