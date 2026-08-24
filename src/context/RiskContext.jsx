@@ -1,154 +1,256 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 
 const RiskContext = createContext();
 
-// Initial Business Units
+// Business Units for FinSecure Bank
 const DEFAULT_BUSINESS_UNITS = [
-  'E-Commerce & Retail',
-  'Core Banking & Payments',
-  'Corporate IT & HR',
-  'Research & Development'
+  'Retail Banking',
+  'Corporate Banking',
+  'Payments & Settlement',
+  'Digital Banking',
+  'Core IT & Infrastructure',
+  'Human Resources & Legal'
 ];
 
-// Initial Assets
-const INITIAL_ASSETS = [
+// Rich Enterprise Asset Dataset: FinSecure Bank (52 structured assets)
+const BASE_INITIAL_ASSETS = [
   {
     id: 'AST-001',
     name: 'Payment Gateway API',
     type: 'API',
-    owner: 'Priya Sharma (Payments Lead)',
-    businessUnit: 'Core Banking & Payments',
+    owner: 'Priya Sharma (Head of Payments)',
+    businessUnit: 'Payments & Settlement',
     criticality: 'Critical',
     dataSensitivity: 'High',
     internetExposure: 'Yes',
-    dependencies: ['AST-003'], // Depends on Customer DB
-    businessService: 'Checkout & Transaction Processing',
-    downtimeCostPerHour: 450000, // ₹4.5 Lakh
-    recordsExposed: 50000,
-    costPerRecord: 250, // ₹250
-    regulatoryPenalty: 5000000, // ₹50 Lakh
-    recoveryCost: 1500000, // ₹15 Lakh
-    reputationFactor: 3000000, // ₹30 Lakh
-    controls: {
-      mfa: 30, // 30% effective
-      patching: 60,
-      edr: 85,
-      segmentation: 20,
-      monitoring: 70,
-      backup: 90
-    }
+    dependencies: ['AST-003', 'AST-006'],
+    businessService: 'Checkout & Real-Time Card Processing',
+    downtimeCostPerHour: 450000,
+    recordsExposed: 85000,
+    costPerRecord: 350,
+    regulatoryPenalty: 6000000,
+    recoveryCost: 1800000,
+    reputationFactor: 4000000,
+    controls: { mfa: 35, patching: 60, edr: 85, segmentation: 25, monitoring: 70, backup: 90 }
   },
   {
     id: 'AST-002',
-    name: 'E-Commerce Frontend Web App',
+    name: 'Retail Internet Banking Portal',
     type: 'Application',
-    owner: 'Amit Patel (Retail Ops)',
-    businessUnit: 'E-Commerce & Retail',
+    owner: 'Amit Patel (Retail Ops VP)',
+    businessUnit: 'Retail Banking',
     criticality: 'High',
     dataSensitivity: 'Medium',
     internetExposure: 'Yes',
-    dependencies: ['AST-001'], // Depends on Payment API
-    businessService: 'Online Customer Shopping Portal',
-    downtimeCostPerHour: 200000, // ₹2 Lakh
-    recordsExposed: 120000,
-    costPerRecord: 120, // ₹120
-    regulatoryPenalty: 2000000, // ₹20 Lakh
-    recoveryCost: 800000, // ₹8 Lakh
-    reputationFactor: 1500000, // ₹15 Lakh
-    controls: {
-      mfa: 90,
-      patching: 40,
-      edr: 50,
-      segmentation: 50,
-      monitoring: 60,
-      backup: 95
-    }
+    dependencies: ['AST-001', 'AST-004'],
+    businessService: 'Customer Web Portal & Account View',
+    downtimeCostPerHour: 250000,
+    recordsExposed: 150000,
+    costPerRecord: 180,
+    regulatoryPenalty: 2500000,
+    recoveryCost: 950000,
+    reputationFactor: 2000000,
+    controls: { mfa: 90, patching: 40, edr: 55, segmentation: 50, monitoring: 65, backup: 95 }
   },
   {
     id: 'AST-003',
-    name: 'Customer Transaction Database',
+    name: 'Core Transaction Ledger DB (PostgreSQL)',
     type: 'Database',
-    owner: 'Sanjay Kumar (DB Admin)',
-    businessUnit: 'Core Banking & Payments',
+    owner: 'Sanjay Kumar (Chief DBA)',
+    businessUnit: 'Payments & Settlement',
     criticality: 'Critical',
     dataSensitivity: 'High',
     internetExposure: 'No',
     dependencies: [],
-    businessService: 'Transaction Ledger & Customer Profiles',
-    downtimeCostPerHour: 600000, // ₹6 Lakh
-    recordsExposed: 200000,
-    costPerRecord: 400, // ₹400
-    regulatoryPenalty: 12000000, // ₹1.2 Cr
-    recoveryCost: 3000000, // ₹30 Lakh
-    reputationFactor: 8000000, // ₹80 Lakh
-    controls: {
-      mfa: 40,
-      patching: 75,
-      edr: 90,
-      segmentation: 80,
-      monitoring: 85,
-      backup: 99
-    }
+    businessService: 'Financial Ledger & Account Balances',
+    downtimeCostPerHour: 650000,
+    recordsExposed: 250000,
+    costPerRecord: 450,
+    regulatoryPenalty: 15000000,
+    recoveryCost: 3500000,
+    reputationFactor: 9000000,
+    controls: { mfa: 45, patching: 75, edr: 90, segmentation: 80, monitoring: 85, backup: 99 }
   },
   {
     id: 'AST-004',
-    name: 'Corporate Active Directory Server',
+    name: 'Corporate Active Directory & IAM Server',
     type: 'Identity Provider',
-    owner: 'Rajesh Nair (IT Operations)',
-    businessUnit: 'Corporate IT & HR',
-    criticality: 'High',
-    dataSensitivity: 'Medium',
+    owner: 'Rajesh Nair (IT Security Lead)',
+    businessUnit: 'Core IT & Infrastructure',
+    criticality: 'Critical',
+    dataSensitivity: 'High',
     internetExposure: 'No',
     dependencies: [],
-    businessService: 'Employee Access & SSO',
-    downtimeCostPerHour: 100000, // ₹1 Lakh
-    recordsExposed: 5000,
-    costPerRecord: 100, // ₹100
-    regulatoryPenalty: 500000, // ₹5 Lakh
-    recoveryCost: 400000, // ₹4 Lakh
-    reputationFactor: 500000, // ₹5 Lakh
-    controls: {
-      mfa: 80,
-      patching: 80,
-      edr: 70,
-      segmentation: 40,
-      monitoring: 50,
-      backup: 85
-    }
+    businessService: 'Single Sign-On & Employee Access Control',
+    downtimeCostPerHour: 150000,
+    recordsExposed: 6500,
+    costPerRecord: 150,
+    regulatoryPenalty: 800000,
+    recoveryCost: 500000,
+    reputationFactor: 750000,
+    controls: { mfa: 80, patching: 70, edr: 65, segmentation: 40, monitoring: 55, backup: 85 }
   },
   {
     id: 'AST-005',
-    name: 'R&D Code Repository (GitHub Enterprise)',
+    name: 'DevSecOps CI/CD & Code Repository',
     type: 'Application',
     owner: 'Vikram Mehta (VP Engineering)',
-    businessUnit: 'Research & Development',
+    businessUnit: 'Core IT & Infrastructure',
     criticality: 'Medium',
     dataSensitivity: 'High',
     internetExposure: 'Yes',
     dependencies: [],
-    businessService: 'Intellectual Property & Code Storage',
-    downtimeCostPerHour: 50000, // ₹50k
-    recordsExposed: 500,
-    costPerRecord: 1000, // ₹1000 (IP heavy)
-    regulatoryPenalty: 1000000, // ₹10 Lakh
-    recoveryCost: 500000, // ₹5 Lakh
-    reputationFactor: 2000000, // ₹20 Lakh
-    controls: {
-      mfa: 95,
-      patching: 30,
-      edr: 20,
-      segmentation: 10,
-      monitoring: 40,
-      backup: 90
-    }
+    businessService: 'Proprietary Algorithm Repository & Automated Builds',
+    downtimeCostPerHour: 75000,
+    recordsExposed: 1200,
+    costPerRecord: 1200,
+    regulatoryPenalty: 1200000,
+    recoveryCost: 600000,
+    reputationFactor: 2500000,
+    controls: { mfa: 95, patching: 35, edr: 30, segmentation: 20, monitoring: 45, backup: 90 }
+  },
+  {
+    id: 'AST-006',
+    name: 'UPI & Instant Payment Switch Node',
+    type: 'Server',
+    owner: 'Priya Sharma (Head of Payments)',
+    businessUnit: 'Payments & Settlement',
+    criticality: 'Critical',
+    dataSensitivity: 'High',
+    internetExposure: 'No',
+    dependencies: ['AST-003'],
+    businessService: 'National Instant Settlement Switch',
+    downtimeCostPerHour: 500000,
+    recordsExposed: 120000,
+    costPerRecord: 300,
+    regulatoryPenalty: 10000000,
+    recoveryCost: 2500000,
+    reputationFactor: 7000000,
+    controls: { mfa: 50, patching: 65, edr: 80, segmentation: 75, monitoring: 85, backup: 95 }
+  },
+  {
+    id: 'AST-007',
+    name: 'Mobile Banking iOS & Android API Gateway',
+    type: 'API',
+    owner: 'Neha Gupta (Digital Channels Lead)',
+    businessUnit: 'Digital Banking',
+    criticality: 'Critical',
+    dataSensitivity: 'High',
+    internetExposure: 'Yes',
+    dependencies: ['AST-001', 'AST-003'],
+    businessService: 'Mobile Banking Application Backend',
+    downtimeCostPerHour: 350000,
+    recordsExposed: 180000,
+    costPerRecord: 220,
+    regulatoryPenalty: 5500000,
+    recoveryCost: 1500000,
+    reputationFactor: 4500000,
+    controls: { mfa: 85, patching: 50, edr: 70, segmentation: 45, monitoring: 75, backup: 90 }
+  },
+  {
+    id: 'AST-008',
+    name: 'SWIFT Corporate Wire Transfer Terminal',
+    type: 'Server',
+    owner: 'Karan Malhotra (Corporate Banking Head)',
+    businessUnit: 'Corporate Banking',
+    criticality: 'Critical',
+    dataSensitivity: 'High',
+    internetExposure: 'No',
+    dependencies: ['AST-003', 'AST-004'],
+    businessService: 'Cross-Border Commercial Remittances',
+    downtimeCostPerHour: 800000,
+    recordsExposed: 15000,
+    costPerRecord: 1500,
+    regulatoryPenalty: 20000000,
+    recoveryCost: 5000000,
+    reputationFactor: 15000000,
+    controls: { mfa: 90, patching: 80, edr: 95, segmentation: 90, monitoring: 90, backup: 99 }
+  },
+  {
+    id: 'AST-009',
+    name: 'Trade Finance & Letter of Credit Engine',
+    type: 'Application',
+    owner: 'Karan Malhotra (Corporate Banking Head)',
+    businessUnit: 'Corporate Banking',
+    criticality: 'High',
+    dataSensitivity: 'Medium',
+    internetExposure: 'No',
+    dependencies: ['AST-008'],
+    businessService: 'Commercial Trade Credit Validation',
+    downtimeCostPerHour: 180000,
+    recordsExposed: 8000,
+    costPerRecord: 500,
+    regulatoryPenalty: 1500000,
+    recoveryCost: 700000,
+    reputationFactor: 1800000,
+    controls: { mfa: 75, patching: 60, edr: 60, segmentation: 50, monitoring: 60, backup: 85 }
+  },
+  {
+    id: 'AST-010',
+    name: 'HR Employee Payroll & Benefits Portal',
+    type: 'Application',
+    owner: 'Ananya Sen (CHRO)',
+    businessUnit: 'Human Resources & Legal',
+    criticality: 'Medium',
+    dataSensitivity: 'High',
+    internetExposure: 'Yes',
+    dependencies: ['AST-004'],
+    businessService: 'Employee Payroll & Tax Disclosures',
+    downtimeCostPerHour: 40000,
+    recordsExposed: 4500,
+    costPerRecord: 200,
+    regulatoryPenalty: 750000,
+    recoveryCost: 300000,
+    reputationFactor: 600000,
+    controls: { mfa: 85, patching: 55, edr: 40, segmentation: 30, monitoring: 40, backup: 85 }
   }
 ];
 
-// Initial Findings (includes standard and Strix validated findings)
+// Generate assets up to 52 across units
+const generateEnterpriseAssets = () => {
+  const assetTypes = ['Application', 'API', 'Database', 'Server', 'Endpoint', 'Cloud Resource', 'Network Device'];
+  const fullList = [...BASE_INITIAL_ASSETS];
+  for (let i = 11; i <= 52; i++) {
+    const bu = DEFAULT_BUSINESS_UNITS[(i - 11) % DEFAULT_BUSINESS_UNITS.length];
+    const atype = assetTypes[(i - 11) % assetTypes.length];
+    const isCrit = i % 7 === 0 ? 'Critical' : i % 3 === 0 ? 'High' : i % 2 === 0 ? 'Medium' : 'Low';
+    const isExp = i % 4 === 0 ? 'Yes' : 'No';
+
+    fullList.push({
+      id: `AST-${String(i).padStart(3, '0')}`,
+      name: `${bu} ${atype} Instance ${i}`,
+      type: atype,
+      owner: `Unit Lead (${bu})`,
+      businessUnit: bu,
+      criticality: isCrit,
+      dataSensitivity: isCrit === 'Critical' || isCrit === 'High' ? 'High' : 'Medium',
+      internetExposure: isExp,
+      dependencies: i % 3 === 0 ? [`AST-${String(i - 1).padStart(3, '0')}`] : [],
+      businessService: `${bu} Operations Module ${i}`,
+      downtimeCostPerHour: 30000 * (isCrit === 'Critical' ? 4 : isCrit === 'High' ? 2 : 1),
+      recordsExposed: 1500 * i,
+      costPerRecord: 150,
+      regulatoryPenalty: 300000 * (isCrit === 'Critical' ? 5 : isCrit === 'High' ? 2 : 1),
+      recoveryCost: 150000 * (isCrit === 'Critical' ? 3 : 1),
+      reputationFactor: 250000 * (isCrit === 'Critical' ? 4 : 1),
+      controls: {
+        mfa: 40 + (i % 50),
+        patching: 35 + (i % 45),
+        edr: 50 + (i % 40),
+        segmentation: 30 + (i % 60),
+        monitoring: 45 + (i % 45),
+        backup: 80 + (i % 18)
+      }
+    });
+  }
+  return fullList;
+};
+
+// Initial Findings Schema
 const INITIAL_FINDINGS = [
   {
     id: 'FND-001',
-    source: 'Strix AI Pentest',
+    source: 'CyberRiskIQ AI Security Assessment',
     assetId: 'AST-001',
     vulnerability: 'Broken Object Level Authorization (BOLA) in /api/v1/payments/charge',
     severity: 'Critical',
@@ -157,7 +259,8 @@ const INITIAL_FINDINGS = [
     internetExposed: true,
     evidence: 'Exploited BOLA via customized Authorization header parameters to pull other customer payment tokens. Response: HTTP 200 OK with sensitive JSON payload containing Card Holder details.',
     controlState: 'Weak input sanitization and inadequate endpoint auth verification.',
-    discoveredAt: '2026-08-22T14:30:00Z',
+    remediation: 'Implement server-side object-level permission verification and tenant scoping on all payment endpoints.',
+    discoveredAt: '2026-08-24T14:30:00Z',
     status: 'Open',
     pocAttached: true
   },
@@ -172,6 +275,7 @@ const INITIAL_FINDINGS = [
     internetExposed: true,
     evidence: 'Apache version 2.4.56 detected. Version is vulnerable to Denial of Service and potential remote code execution.',
     controlState: 'Patch cycle delay - pending monthly remediation window.',
+    remediation: 'Upgrade Apache HTTP Server to version 2.4.59+.',
     discoveredAt: '2026-08-20T08:15:00Z',
     status: 'Open',
     pocAttached: false
@@ -187,6 +291,7 @@ const INITIAL_FINDINGS = [
     internetExposed: false,
     evidence: 'Found standard .sql dumps on directory /var/backup/ without password-protected gzip compression or KMS encryption.',
     controlState: 'Backup policy violation - local control failed to enforce encryption key.',
+    remediation: 'Enforce automated AES-256 / GPG encryption on database export pipelines.',
     discoveredAt: '2026-08-18T10:00:00Z',
     status: 'Open',
     pocAttached: false
@@ -202,41 +307,59 @@ const INITIAL_FINDINGS = [
     internetExposed: false,
     evidence: 'Found 4 service accounts with high privileges using weak SPN encryption keys, allowing offline brute-force cracking.',
     controlState: 'MFA active for normal users, but service accounts are bypassed.',
+    remediation: 'Rotate service account passwords to 32+ character keys and migrate to gMSA.',
     discoveredAt: '2026-08-23T11:45:00Z',
     status: 'Open',
     pocAttached: false
   },
   {
     id: 'FND-005',
-    source: 'Strix AI Pentest',
+    source: 'CyberRiskIQ AI Security Assessment',
     assetId: 'AST-005',
-    vulnerability: 'Hardcoded Github Access Token in CI/CD pipeline scripts',
+    vulnerability: 'Hardcoded GitHub Access Token in CI/CD pipeline scripts',
     severity: 'Critical',
     cvss: 9.3,
     exploitAvailable: true,
     internetExposed: true,
     evidence: 'Extracted active PAT token from actions workflow logs. Token has admin permissions on the main code repositories.',
     controlState: 'Pipeline secrets not configured in Github Secrets manager.',
+    remediation: 'Revoke token and configure GitHub Secrets Store.',
     discoveredAt: '2026-08-24T02:00:00Z',
+    status: 'Open',
+    pocAttached: true
+  },
+  {
+    id: 'FND-006',
+    source: 'CyberRiskIQ AI Security Assessment',
+    assetId: 'AST-007',
+    vulnerability: 'Insecure Direct Object Reference (IDOR) on Mobile Statement API',
+    severity: 'Critical',
+    cvss: 9.1,
+    exploitAvailable: true,
+    internetExposed: true,
+    evidence: 'Manipulating account_num in GET /api/v2/statements returned unauthorized financial ledgers.',
+    controlState: 'Downstream microservice omitted tenant boundary check.',
+    remediation: 'Enforce strict session-bound customer context in statement service.',
+    discoveredAt: '2026-08-24T16:00:00Z',
     status: 'Open',
     pocAttached: true
   }
 ];
 
-// Security Controls Library with costs and projected risk reduction percentages
+// Defensive Controls Library
 const CONTROLS_LIBRARY = [
   { id: 'ctrl-mfa', name: 'Enforce Strong MFA & PAM', cost: 1200000, reduction: 0.25, description: 'Reduces Threat Likelihood for access breaches' }, // ₹12 Lakh
   { id: 'ctrl-patching', name: 'Continuous Automated Patching', cost: 1500000, reduction: 0.30, description: 'Lowers exploitability scores on all systems' }, // ₹15 Lakh
   { id: 'ctrl-edr', name: 'Deploy Next-Gen EDR Agent', cost: 1800000, reduction: 0.35, description: 'Improves response times and host security' }, // ₹18 Lakh
   { id: 'ctrl-segmentation', name: 'Micro-segmentation & Zero Trust Network', cost: 2500000, reduction: 0.40, description: 'Minimizes horizontal blast radius on databases' }, // ₹25 Lakh
   { id: 'ctrl-monitoring', name: '24/7 SOC & SIEM Monitoring', cost: 1000000, reduction: 0.20, description: 'Improves detection and incident responsiveness' }, // ₹10 Lakh
-  { id: 'ctrl-backup', name: 'Immutable Encrypted Cloud Backups', cost: 600000, reduction: 0.15, description: 'Drastically lowers data recovery and restoration costs' } // ₹6 Lakh
+  { id: 'ctrl-backup', name: 'Immutable Encrypted Cloud Backups', cost: 600000, reduction: 0.15, description: 'Drastically lowers data recovery and restoration costs by 70%' } // ₹6 Lakh
 ];
 
 export const RiskProvider = ({ children }) => {
   const [org, setOrg] = useState({
-    name: 'FinSafe Digital Solutions',
-    industry: 'Financial Technology',
+    name: 'FinSecure Bank',
+    industry: 'Banking & Financial Services',
     employees: 1200,
     annualRevenue: 500000000, // ₹50 Crore
     budget: 3500000, // ₹35 Lakh
@@ -244,18 +367,27 @@ export const RiskProvider = ({ children }) => {
     businessUnits: DEFAULT_BUSINESS_UNITS
   });
 
-  const [assets, setAssets] = useState(INITIAL_ASSETS);
+  const [assets, setAssets] = useState(generateEnterpriseAssets);
   const [findings, setFindings] = useState(INITIAL_FINDINGS);
   const [darkMode, setDarkMode] = useState(true);
-  // import the service at top (will be dynamically imported where needed)
 
   const [ingestionHistory, setIngestionHistory] = useState([
-    { id: 'BCH-001', source: 'Strix AI Pentest', timestamp: '2026-08-24T02:00:00Z', count: 2, status: 'Success' },
+    { id: 'BCH-001', source: 'CyberRiskIQ AI Security Assessment', timestamp: '2026-08-24T14:30:00Z', count: 3, status: 'Success' },
     { id: 'BCH-002', source: 'Internal Scanner', timestamp: '2026-08-20T08:15:00Z', count: 3, status: 'Success' }
   ]);
 
-  // Scenario Simulator Overlays (contains simulated changes to controls/exposures)
-  // For each control, we store if it is simulated as 'enabled' organization-wide
+  const [auditLogs, setAuditLogs] = useState([
+    {
+      id: 'AUD-001',
+      timestamp: new Date().toISOString(),
+      user: 'secops@finsecure.bank',
+      action: 'PLATFORM_INITIALIZATION',
+      entity: 'FinSecure Bank',
+      details: 'Initialized 52 assets across 6 business units.'
+    }
+  ]);
+
+  // Scenario Simulator Overlays
   const [simulatedControls, setSimulatedControls] = useState({
     mfa: false,
     patching: false,
@@ -265,48 +397,61 @@ export const RiskProvider = ({ children }) => {
     backup: false
   });
   
-  const [simulatedExposure, setSimulatedExposure] = useState({}); // assetId -> { internetExposure, criticality } overrides
+  const [simulatedExposure, setSimulatedExposure] = useState({});
+
+  const addAuditLog = (action, entity, details) => {
+    setAuditLogs(prev => [
+      {
+        id: `AUD-${Date.now().toString().slice(-6)}`,
+        timestamp: new Date().toISOString(),
+        user: 'admin@finsecure.bank',
+        action,
+        entity,
+        details
+      },
+      ...prev
+    ]);
+  };
 
   // Continuous Risk Engine Calculations
   const calculateCorrelatedRiskIndicator = (finding, asset, exposureOverride = null) => {
-    let base = finding.cvss;
+    let base = parseFloat(finding.cvss) || 5.0;
     
-    // Boost for availability of working exploit code
-    if (finding.exploitAvailable) base += 1.2;
+    if (finding.exploitAvailable || finding.exploit_available) base += 1.2;
     
-    // Boost if asset is exposed to the internet
     const expOverride = exposureOverride || simulatedExposure;
     const isExposed = expOverride[finding.assetId]?.internetExposure !== undefined
       ? expOverride[finding.assetId].internetExposure === 'Yes'
-      : asset?.internetExposure === 'Yes';
+      : asset?.internetExposure === 'Yes' || asset?.internet_exposure === 'Yes';
 
     if (isExposed) base += 1.5;
     
-    // Cap CVSS correlation at 10.0
-    return Math.min(10.0, base);
+    return Math.min(10.0, Math.max(0.0, base));
   };
 
   const getAssetOverallControlsEffectiveness = (asset, controlsOverride = null) => {
     let score = 0;
-    const keys = Object.keys(asset.controls);
+    const controls = asset.controls || {};
+    const keys = Object.keys(controls);
+    if (keys.length === 0) return 30;
+
     const ctrlOverride = controlsOverride || simulatedControls;
     keys.forEach(k => {
-      // If control is simulated organization-wide, boost effectiveness to 95%
-      const simulatedVal = ctrlOverride[k] ? 95 : asset.controls[k];
+      const simulatedVal = ctrlOverride[k] ? 95 : (controls[k] ?? 30);
       score += simulatedVal;
     });
     return Math.round(score / keys.length);
   };
 
   const calculateAssetRiskScore = (asset, controlsOverride = null, exposureOverride = null) => {
-    // Find all open findings for this asset
-    const assetFindings = findings.filter(f => f.assetId === asset.id && f.status === 'Open');
-    if (assetFindings.length === 0) return 10; // baseline risk score
+    const assetFindings = findings.filter(f => (f.assetId === asset.id || f.asset_id === asset.id) && f.status === 'Open');
+    if (assetFindings.length === 0) return 10;
 
-    const maxCorrelated = Math.max(...assetFindings.map(f => calculateCorrelatedRiskIndicator(f, asset, exposureOverride)));
-    const avgCorrelated = assetFindings.reduce((sum, f) => sum + calculateCorrelatedRiskIndicator(f, asset, exposureOverride), 0) / assetFindings.length;
+    const correlatedList = assetFindings.map(f => calculateCorrelatedRiskIndicator(f, asset, exposureOverride));
+    const maxCorrelated = Math.max(...correlatedList);
+    const avgCorrelated = correlatedList.reduce((sum, v) => sum + v, 0) / correlatedList.length;
     
-    const threatLikelihood = (maxCorrelated * 0.7 + avgCorrelated * 0.3) / 10.0; // scale 0 to 1
+    const threatLikelihood = (maxCorrelated * 0.7 + avgCorrelated * 0.3) / 10.0;
     
     const expOverride = exposureOverride || simulatedExposure;
     const criticalityVal = expOverride[asset.id]?.criticality !== undefined
@@ -318,10 +463,8 @@ export const RiskProvider = ({ children }) => {
     const controlsEffectiveness = getAssetOverallControlsEffectiveness(asset, controlsOverride) / 100.0;
     const controlGap = 1.0 - controlsEffectiveness;
 
-    // Risk score out of 100
     const rawScore = (threatLikelihood * 0.5 + criticalityWeight * 0.3 + controlGap * 0.2) * 100;
 
-    // Scale based on Risk Appetite (Low appetite means higher perceived risk score, High appetite means lower perceived risk score)
     let appetiteMultiplier = 1.0;
     if (org.riskAppetite === 'Low') appetiteMultiplier = 1.25;
     else if (org.riskAppetite === 'High') appetiteMultiplier = 0.75;
@@ -330,44 +473,34 @@ export const RiskProvider = ({ children }) => {
   };
 
   const calculateAssetFinancialImpact = (asset) => {
-    // Scaling factors based on company size parameters
-    const revenueScaler = org.annualRevenue / 500000000; // relative to ₹50 Crore baseline
-    const employeeScaler = org.employees / 1200; // relative to 1200 employee baseline
+    const revenueScaler = org.annualRevenue / 500000000;
+    const employeeScaler = org.employees / 1200;
 
-    // Availability impact (Downtime 4 hours average incident length)
-    const downtimeImpact = (asset.downtimeCostPerHour * revenueScaler) * 4;
-    
-    // Data impact (Records exposed scale with employee count)
-    const recordsExposedSim = Math.round(asset.recordsExposed * employeeScaler);
-    const dataImpact = recordsExposedSim * asset.costPerRecord;
-
-    // Regulatory, recovery, and reputation costs scale with business scale
-    const regulatoryFines = asset.regulatoryPenalty * revenueScaler;
-    const recoveryCosts = asset.recoveryCost * employeeScaler;
-    const reputationCosts = asset.reputationFactor * revenueScaler;
+    const downtimeImpact = ((asset.downtimeCostPerHour || 50000) * revenueScaler) * 4;
+    const dataImpact = Math.round((asset.recordsExposed || 5000) * employeeScaler) * (asset.costPerRecord || 150);
+    const regulatoryFines = (asset.regulatoryPenalty || 500000) * revenueScaler;
+    const recoveryCosts = (asset.recoveryCost || 300000) * employeeScaler;
+    const reputationCosts = (asset.reputationFactor || 500000) * revenueScaler;
 
     return Math.round(downtimeImpact + dataImpact + regulatoryFines + recoveryCosts + reputationCosts);
   };
 
   const calculateAssetEAL = (asset, controlsOverride = null, exposureOverride = null) => {
     const riskScore = calculateAssetRiskScore(asset, controlsOverride, exposureOverride);
-    
-    // Mapped Probability: Risk Score 10 -> 1% probability, 100 -> 35% annual probability
     const probability = 0.01 + (riskScore - 10) * (0.34 / 90);
     const financialImpact = calculateAssetFinancialImpact(asset);
     
-    // Apply simulated backup reductions (immutable backups lower recovery costs by 70%)
     const ctrlOverride = controlsOverride || simulatedControls;
-    let recoveryCostSimulated = asset.recoveryCost;
+    let recoveryCostSimulated = asset.recoveryCost || 300000;
     if (ctrlOverride.backup) {
-      recoveryCostSimulated = asset.recoveryCost * 0.3;
+      recoveryCostSimulated = (asset.recoveryCost || 300000) * 0.3;
     }
-    const adjustedFinancialImpact = financialImpact - (asset.recoveryCost - recoveryCostSimulated);
+    const adjustedFinancialImpact = financialImpact - ((asset.recoveryCost || 300000) - recoveryCostSimulated);
 
     return Math.round(probability * adjustedFinancialImpact);
   };
 
-  // Roll Up calculations (can be active or simulated based on overlays)
+  // Roll Up calculations
   const getEnterpriseStats = () => {
     let totalEal = 0;
     let totalExposure = 0;
@@ -391,7 +524,7 @@ export const RiskProvider = ({ children }) => {
       totalAssetsWithWeights += weight;
     });
 
-    const averageRiskScore = Math.round(weightedRiskSum / totalAssetsWithWeights);
+    const averageRiskScore = Math.round(weightedRiskSum / (totalAssetsWithWeights || 1));
 
     return {
       eal: totalEal,
@@ -400,7 +533,6 @@ export const RiskProvider = ({ children }) => {
     };
   };
 
-  // Standard (non-simulated) stats - completely stateless to avoid rendering updates loop
   const getActiveStats = () => {
     const baselineControls = {
       mfa: false, patching: false, edr: false, segmentation: false, monitoring: false, backup: false
@@ -427,22 +559,16 @@ export const RiskProvider = ({ children }) => {
     return {
       eal: totalEal,
       exposure: totalExposure,
-      riskScore: Math.round(weightedRiskSum / totalAssetsWithWeights)
+      riskScore: Math.round(weightedRiskSum / (totalAssetsWithWeights || 1))
     };
   };
 
-  // Knapsack Budget Optimizer Solver
-  // Maximize EAL reduction subject to sum(cost) <= budget
+  // Knapsack Optimizer
   const solveOptimization = (customBudget = org.budget, lockedIn = [], lockedOut = []) => {
-    // Filter controls by locked out status
     let availableOptions = CONTROLS_LIBRARY.filter(c => !lockedOut.includes(c.id));
-    
-    // Pre-calculate individual control impact on EAL
-    // We compute EAL reduction for each control option
     const baseStats = getActiveStats();
     
     const optionsWithEalReduction = availableOptions.map(c => {
-      // Simulate just this one control
       const tempControls = {
         mfa: false, patching: false, edr: false, segmentation: false, monitoring: false, backup: false
       };
@@ -450,7 +576,6 @@ export const RiskProvider = ({ children }) => {
       const key = c.id.replace('ctrl-', '');
       tempControls[key] = true;
       
-      // Calculate EAL under this single control simulation
       let tempEal = 0;
       assets.forEach(asset => {
         tempEal += calculateAssetEAL(asset, tempControls);
@@ -465,27 +590,21 @@ export const RiskProvider = ({ children }) => {
       };
     });
 
-    // Separate locked in controls
     const lockedInControls = optionsWithEalReduction.filter(c => lockedIn.includes(c.id));
     const lockedInCost = lockedInControls.reduce((sum, c) => sum + c.cost, 0);
     
-    // Remaining options to solve with remaining budget
     const remainingBudget = customBudget - lockedInCost;
     const selectableOptions = optionsWithEalReduction.filter(c => !lockedIn.includes(c.id));
 
     let selectedList = [];
     if (remainingBudget >= 0) {
-      // Solve DP Knapsack on remaining items
       const n = selectableOptions.length;
-      // Convert currency values into tens of thousands to make DP array sizing memory efficient
-      // (Budget & Cost are rounded to nearest 10,000)
       const scale = 10000;
       const W = Math.floor(remainingBudget / scale);
       
       const weights = selectableOptions.map(o => Math.ceil(o.cost / scale));
       const values = selectableOptions.map(o => o.ealReduction);
       
-      // DP Table
       const dp = Array(n + 1).fill().map(() => Array(W + 1).fill(0));
       
       for (let i = 1; i <= n; i++) {
@@ -500,7 +619,6 @@ export const RiskProvider = ({ children }) => {
         }
       }
       
-      // Traceback
       let j = W;
       for (let i = n; i > 0; i--) {
         if (dp[i][j] !== dp[i - 1][j]) {
@@ -510,7 +628,6 @@ export const RiskProvider = ({ children }) => {
       }
     }
 
-    // Merge locked in controls back in
     const finalSelection = [...lockedInControls, ...selectedList];
     const totalCost = finalSelection.reduce((sum, c) => sum + c.cost, 0);
     const totalReduction = finalSelection.reduce((sum, c) => sum + c.ealReduction, 0);
@@ -530,13 +647,12 @@ export const RiskProvider = ({ children }) => {
     const newFindings = [];
     
     rawRecords.forEach((record, index) => {
-      // Normalize finding matching canonical schema
-      const assetExists = assets.some(a => a.id === record.assetId);
+      const assetExists = assets.some(a => a.id === record.assetId || a.id === record.asset_id);
       if (assetExists && record.vulnerability) {
         newFindings.push({
           id: `FND-${Date.now()}-${index}`,
           source: sourceName,
-          assetId: record.assetId,
+          assetId: record.assetId || record.asset_id,
           vulnerability: record.vulnerability,
           severity: record.severity || 'Medium',
           cvss: parseFloat(record.cvss) || 5.0,
@@ -544,6 +660,7 @@ export const RiskProvider = ({ children }) => {
           internetExposed: record.internetExposed === 'Yes' || record.internetExposed === true,
           evidence: record.evidence || 'No additional telemetry attached.',
           controlState: record.controlState || 'Evaluation pending.',
+          remediation: record.remediation || 'Remediation review required.',
           discoveredAt: new Date().toISOString(),
           status: 'Open',
           pocAttached: record.pocAttached === true || record.pocAttached === 'Yes'
@@ -564,11 +681,12 @@ export const RiskProvider = ({ children }) => {
         },
         ...prev
       ]);
+      addAuditLog('DATA_INGESTION', sourceName, `Ingested ${parsedCount} vulnerability records.`);
     }
   };
 
-  // Ingest Strix JSON results
-  const ingestStrixFindings = async (dataOrRunId) => {
+  // Ingest CyberRiskIQ AI Security Assessment Results
+  const ingestAssessmentFindings = async (dataOrRunId) => {
     try {
       let findingsList = [];
       if (Array.isArray(dataOrRunId)) {
@@ -576,7 +694,7 @@ export const RiskProvider = ({ children }) => {
       } else if (dataOrRunId && Array.isArray(dataOrRunId.findings)) {
         findingsList = dataOrRunId.findings;
       } else if (typeof dataOrRunId === 'string') {
-        const res = await fetch(`/api/strix/result/${dataOrRunId}`);
+        const res = await fetch(`/api/assessment/result/${dataOrRunId}`);
         if (res.ok) {
           const json = await res.json();
           findingsList = json.results?.findings || json.findings || [];
@@ -586,31 +704,30 @@ export const RiskProvider = ({ children }) => {
       if (findingsList.length === 0) return;
 
       const formatted = findingsList.map((f, idx) => ({
-        id: `FND-STRIX-${Date.now()}-${idx}`,
-        source: 'Strix AI Pentest',
+        id: `FND-SEC-${Date.now()}-${idx}`,
+        source: 'CyberRiskIQ AI Security Assessment',
         assetId: f.assetId || assets[0]?.id || 'AST-001',
-        vulnerability: f.vulnerability || f.title || 'Discovered Strix Vulnerability',
+        vulnerability: f.vulnerability || f.title || 'Discovered Security Finding',
         severity: f.severity || 'High',
         cvss: parseFloat(f.cvss) || 7.5,
         exploitAvailable: f.exploitAvailable === true || f.exploitAvailable === 'Yes' || !!f.exploit,
         internetExposed: f.internetExposed === true || f.internetExposed === 'Yes',
-        evidence: f.evidence || f.description || 'PoC generated and verified via Strix agent.',
+        evidence: f.evidence || f.description || 'PoC generated and verified via autonomous assessment agent.',
         controlState: f.controlState || 'Control evasion confirmed during automated penetration test.',
+        remediation: f.remediation || 'Remediate according to security guidelines.',
         discoveredAt: new Date().toISOString(),
         status: 'Open',
         pocAttached: true
       }));
 
-      ingestSecurityData('Strix AI Pentest', formatted);
+      ingestSecurityData('CyberRiskIQ AI Security Assessment', formatted);
     } catch (e) {
-      console.error('Failed to ingest Strix results:', e);
+      console.error('Failed to ingest security assessment results:', e);
     }
   };
 
   // Compliance calculations
   const getCompliancePosture = () => {
-    // NIST CSF Category Map
-    // Identify control weights matching functions
     const nistMapping = {
       'Identify (ID.AM)': ['mfa', 'patching'],
       'Protect (PR.AC)': ['mfa', 'segmentation'],
@@ -620,7 +737,6 @@ export const RiskProvider = ({ children }) => {
       'Recover (RC.RP)': ['backup']
     };
 
-    // ISO 27001 Mapping
     const isoMapping = {
       'A.9 Access Control': ['mfa'],
       'A.12 Operations Security': ['patching', 'monitoring'],
@@ -629,7 +745,6 @@ export const RiskProvider = ({ children }) => {
       'A.18 Compliance': ['monitoring', 'patching']
     };
 
-    // RBI CSF Mapping
     const rbiMapping = {
       'G-1: User Access Control': ['mfa'],
       'G-3: Vulnerability Management': ['patching'],
@@ -638,7 +753,6 @@ export const RiskProvider = ({ children }) => {
       'G-11: Network Security & Segmentation': ['segmentation']
     };
 
-    // SEBI CSCRF Mapping
     const sebiMapping = {
       'Sec 3.1: Identification & Asset Management': ['patching'],
       'Sec 3.2: Protection & Identity Management': ['mfa'],
@@ -656,14 +770,15 @@ export const RiskProvider = ({ children }) => {
         const controlsAssociated = mapping[category];
         controlsAssociated.forEach(ctrl => {
           assets.forEach(asset => {
-            const effectiveness = simulatedControls[ctrl] ? 95 : asset.controls[ctrl];
+            const controls = asset.controls || {};
+            const effectiveness = simulatedControls[ctrl] ? 95 : (controls[ctrl] ?? 30);
             totalEffectiveSum += effectiveness;
             totalItems += 100;
           });
         });
       });
 
-      return Math.round((totalEffectiveSum / totalItems) * 100);
+      return Math.round((totalEffectiveSum / (totalItems || 1)) * 100);
     };
 
     return {
@@ -675,20 +790,24 @@ export const RiskProvider = ({ children }) => {
   };
 
   const addAsset = (newAsset) => {
+    const assetId = `AST-${String(assets.length + 1).padStart(3, '0')}`;
     setAssets(prev => [...prev, {
       ...newAsset,
-      id: `AST-${String(prev.length + 1).padStart(3, '0')}`,
+      id: assetId,
       controls: newAsset.controls || { mfa: 30, patching: 30, edr: 30, segmentation: 30, monitoring: 30, backup: 30 }
     }]);
+    addAuditLog('ASSET_ADDED', assetId, `Added asset ${newAsset.name}`);
   };
 
   const addFinding = (newFinding) => {
+    const findingId = `FND-${String(findings.length + 1).padStart(3, '0')}`;
     setFindings(prev => [{
       ...newFinding,
-      id: `FND-${String(prev.length + 1).padStart(3, '0')}`,
+      id: findingId,
       discoveredAt: new Date().toISOString(),
       status: 'Open'
     }, ...prev]);
+    addAuditLog('FINDING_ADDED', findingId, `Added finding ${newFinding.vulnerability} on ${newFinding.assetId}`);
   };
 
   return (
@@ -702,6 +821,8 @@ export const RiskProvider = ({ children }) => {
         setFindings,
         ingestionHistory,
         setIngestionHistory,
+        auditLogs,
+        addAuditLog,
         simulatedControls,
         setSimulatedControls,
         simulatedExposure,
@@ -714,6 +835,7 @@ export const RiskProvider = ({ children }) => {
         getActiveStats,
         solveOptimization,
         ingestSecurityData,
+        ingestAssessmentFindings,
         getCompliancePosture,
         controlsLibrary: CONTROLS_LIBRARY,
         addAsset,

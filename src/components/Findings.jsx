@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRisk } from '../context/RiskContext';
-import { Terminal, Upload, AlertCircle, Play, CheckCircle, Plus } from 'lucide-react';
+import { Terminal, Upload, AlertCircle, Play, CheckCircle, Plus, ShieldCheck, Search } from 'lucide-react';
 
 export default function Findings() {
   const { 
@@ -15,6 +15,7 @@ export default function Findings() {
   const [selectedFinding, setSelectedFinding] = useState(null);
   const [filterSeverity, setFilterSeverity] = useState('All');
   const [filterSource, setFilterSource] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [uploadMessage, setUploadMessage] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -28,8 +29,9 @@ export default function Findings() {
     internetExposed: false,
     evidence: '',
     controlState: '',
+    remediation: '',
     pocAttached: false,
-    source: 'Manual Data Entry'
+    source: 'CyberRiskIQ AI Security Assessment'
   });
 
   const handleAddSubmit = (e) => {
@@ -51,20 +53,25 @@ export default function Findings() {
       internetExposed: false,
       evidence: '',
       controlState: '',
+      remediation: '',
       pocAttached: false,
-      source: 'Manual Data Entry'
+      source: 'CyberRiskIQ AI Security Assessment'
     });
   };
   
   const fileInputRef = useRef(null);
 
   const severities = ['All', 'Critical', 'High', 'Medium', 'Low'];
-  const sources = ['All', 'Strix AI Pentest', 'Internal Vulnerability Scanner', 'Active Directory Auditor'];
+  const sources = ['All', 'CyberRiskIQ AI Security Assessment', 'Internal Vulnerability Scanner', 'Active Directory Auditor'];
 
   const filteredFindings = findings.filter(f => {
     const sevMatch = filterSeverity === 'All' || f.severity === filterSeverity;
-    const srcMatch = filterSource === 'All' || f.source === filterSource;
-    return sevMatch && srcMatch;
+    const srcMatch = filterSource === 'All' || (f.source && f.source.includes(filterSource.replace('CyberRiskIQ AI Security Assessment', 'Security Assessment')));
+    const searchMatch = !searchQuery || 
+      (f.vulnerability && f.vulnerability.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (f.assetId && f.assetId.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (f.source && f.source.toLowerCase().includes(searchQuery.toLowerCase()));
+    return sevMatch && srcMatch && searchMatch;
   });
 
   const getSeverityBadgeColor = (severity) => {
@@ -89,7 +96,8 @@ export default function Findings() {
         internetExposed: 'No',
         pocAttached: 'Yes',
         evidence: 'Exploited parameter \'?id=1\' OR 1=1 to extract schemas and record tables from the Postgres instance.',
-        controlState: 'WAF active but in bypass-only learning mode.'
+        controlState: 'WAF active but in bypass-only learning mode.',
+        remediation: 'Implement parameterized SQL queries and object-relational mapping.'
       },
       {
         assetId: 'AST-004',
@@ -100,7 +108,8 @@ export default function Findings() {
         internetExposed: 'No',
         pocAttached: 'No',
         evidence: 'Scanned SMB port 445 on directory server and identified lack of patch package KB4013389.',
-        controlState: 'Host firewall enabled but port open locally.'
+        controlState: 'Host firewall enabled but port open locally.',
+        remediation: 'Deploy critical cumulative OS update package.'
       },
       {
         assetId: 'AST-002',
@@ -111,16 +120,16 @@ export default function Findings() {
         internetExposed: 'Yes',
         pocAttached: 'Yes',
         evidence: 'Injected script <script>alert(document.cookie)</script> into feedback form and executed script context in browser.',
-        controlState: 'Input encoding library missing on client-side router.'
+        controlState: 'Input encoding library missing on client-side router.',
+        remediation: 'Enforce HTML output encoding and strict Content Security Policy (CSP).'
       }
     ];
 
-    ingestSecurityData('Strix AI Pentest (Demo Ingestion)', demoRecords);
-    setUploadMessage({ type: 'success', text: 'Demo Ingestion Batch executed: Ingested 3 new findings and recalculated Risk Scores!' });
+    ingestSecurityData('CyberRiskIQ AI Security Assessment (Demo Seed)', demoRecords);
+    setUploadMessage({ type: 'success', text: 'Ingested 3 new validated security findings and updated risk calculations!' });
     setTimeout(() => setUploadMessage(null), 5000);
   };
 
-  // Handle Drag and Drop
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -157,7 +166,6 @@ export default function Findings() {
         if (file.name.endsWith('.json')) {
           parsedData = JSON.parse(text);
         } else if (file.name.endsWith('.csv')) {
-          // simple csv parsing
           const lines = text.split('\n');
           const headers = lines[0].split(',').map(h => h.trim());
           for (let i = 1; i < lines.length; i++) {
@@ -187,8 +195,8 @@ export default function Findings() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Security & Strix Findings</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Normalized vulnerability data compiled from penetration tests, active probes, and static scans.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Security Findings & Telemetry</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Normalized findings repository compiled from AI Security Assessments, vulnerability scans, and active telemetry.</p>
         </div>
 
         <div className="flex gap-2">
@@ -200,9 +208,9 @@ export default function Findings() {
           </button>
           <button
             onClick={runDemoDataGenerator}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg px-4 py-2 text-sm flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg px-4 py-2 text-sm flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
           >
-            <Play className="w-4 h-4" /> Trigger Seed Generator
+            <Play className="w-4 h-4" /> Trigger Seed Ingestion
           </button>
         </div>
       </div>
@@ -211,7 +219,7 @@ export default function Findings() {
       {showAddForm && (
         <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-md space-y-4 transition-theme animate-in fade-in duration-200">
           <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800 pb-3">
-            <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Add New Security Finding</h3>
+            <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Add Normalized Security Finding</h3>
             <button 
               type="button"
               onClick={() => setShowAddForm(false)} 
@@ -234,7 +242,7 @@ export default function Findings() {
               </select>
             </div>
             <div>
-              <label className="block text-zinc-400 mb-1 font-semibold uppercase">Vulnerability *</label>
+              <label className="block text-zinc-400 mb-1 font-semibold uppercase">Vulnerability Name *</label>
               <input 
                 type="text" required 
                 placeholder="e.g. SQL Injection in /api/v1/users"
@@ -307,7 +315,7 @@ export default function Findings() {
               />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-zinc-400 mb-1 font-semibold uppercase">Technical Evidence / Logs</label>
+              <label className="block text-zinc-400 mb-1 font-semibold uppercase">Technical Evidence / Proof-of-Concept</label>
               <textarea 
                 rows="2"
                 placeholder="Proof of concept details..."
@@ -317,13 +325,13 @@ export default function Findings() {
               />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-zinc-400 mb-1 font-semibold uppercase">Control State / Remediation Notes</label>
+              <label className="block text-zinc-400 mb-1 font-semibold uppercase">Remediation Guidelines</label>
               <textarea 
                 rows="2"
-                placeholder="Current state of defensive controls..."
+                placeholder="Guidance for engineering team..."
                 className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-2.5 py-1.5 text-zinc-950 dark:text-zinc-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                value={newFinding.controlState}
-                onChange={e => setNewFinding({...newFinding, controlState: e.target.value})}
+                value={newFinding.remediation}
+                onChange={e => setNewFinding({...newFinding, remediation: e.target.value})}
               />
             </div>
             
@@ -407,7 +415,7 @@ export default function Findings() {
         {/* Right 2 columns: findings table */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex flex-wrap justify-between items-center bg-white dark:bg-[#0c0c0f] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm gap-4">
-            <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="text-zinc-400 font-semibold uppercase">Severity:</span>
                 <select 
@@ -429,6 +437,16 @@ export default function Findings() {
                   {sources.map((s, i) => <option key={i} value={s}>{s}</option>)}
                 </select>
               </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search findings..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none w-44"
+                />
+              </div>
             </div>
           </div>
 
@@ -437,16 +455,16 @@ export default function Findings() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
-                    <th className="p-4">Vulnerability</th>
+                    <th className="p-4">Vulnerability Finding</th>
                     <th className="p-4">Asset ID</th>
-                    <th className="p-4">Source</th>
+                    <th className="p-4">Source Engine</th>
                     <th className="p-4 text-center">Score</th>
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/50 text-sm text-zinc-800 dark:text-zinc-200 font-medium">
                   {filteredFindings.map(f => {
-                    const asset = assets.find(a => a.id === f.assetId);
+                    const asset = assets.find(a => a.id === (f.assetId || f.asset_id));
                     const correlatedScore = calculateCorrelatedRiskIndicator(f, asset);
                     return (
                       <tr key={f.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/30 transition-colors">
@@ -454,20 +472,22 @@ export default function Findings() {
                           <div className="space-y-1">
                             <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                               {f.vulnerability}
-                              {f.pocAttached && (
-                                <span className="inline-flex items-center gap-0.5 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 border border-purple-200/50 dark:border-purple-800/50 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase">
+                              {(f.pocAttached || f.poc_attached) && (
+                                <span className="inline-flex items-center gap-0.5 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase">
                                   <Terminal className="w-2.5 h-2.5" /> PoC Proof
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-zinc-400">Discovered {new Date(f.discoveredAt).toLocaleDateString()}</div>
+                            <div className="text-[11px] text-zinc-400">
+                              Discovered {f.discoveredAt ? new Date(f.discoveredAt).toLocaleDateString() : 'Active'}
+                            </div>
                           </div>
                         </td>
-                        <td className="p-4 font-mono text-zinc-500 text-xs">{f.assetId}</td>
+                        <td className="p-4 font-mono text-zinc-500 text-xs">{f.assetId || f.asset_id}</td>
                         <td className="p-4 text-xs text-zinc-500 dark:text-zinc-400">{f.source}</td>
                         <td className="p-4 text-center">
                           <span className={`px-2 py-0.5 rounded font-bold font-mono ${getSeverityBadgeColor(f.severity)}`}>
-                            {f.cvss.toFixed(1)}
+                            {f.cvss ? Number(f.cvss).toFixed(1) : '5.0'}
                           </span>
                         </td>
                         <td className="p-4 text-right">
@@ -512,24 +532,26 @@ export default function Findings() {
               </div>
               <div className="bg-zinc-50 dark:bg-zinc-900 p-2.5 rounded-lg">
                 <span className="text-[10px] text-zinc-400 uppercase block mb-1">Raw CVSS</span>
-                <span className="font-bold text-zinc-800 dark:text-zinc-200">{selectedFinding.cvss.toFixed(1)}</span>
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">{selectedFinding.cvss ? Number(selectedFinding.cvss).toFixed(1) : '5.0'}</span>
               </div>
               <div className="bg-zinc-50 dark:bg-zinc-900 p-2.5 rounded-lg">
                 <span className="text-[10px] text-zinc-400 uppercase block mb-1">Exploit Code</span>
-                <span className="font-bold text-zinc-800 dark:text-zinc-200">{selectedFinding.exploitAvailable ? 'Available (Public)' : 'None'}</span>
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                  {selectedFinding.exploitAvailable || selectedFinding.exploit_available ? 'Available (Public)' : 'None'}
+                </span>
               </div>
             </div>
 
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-50 uppercase tracking-wide">Validation Evidence</h3>
               <div className="bg-zinc-900 text-zinc-200 font-mono text-xs p-4 rounded-lg overflow-x-auto border border-zinc-800/80 leading-relaxed max-h-48">
-                {selectedFinding.evidence}
+                {selectedFinding.evidence || 'Telemetry record verified without additional console text.'}
               </div>
             </div>
 
             <div className="space-y-1 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800/60 text-xs">
-              <span className="font-bold text-zinc-900 dark:text-zinc-50">Control Verification State</span>
-              <p className="text-zinc-500 dark:text-zinc-400">{selectedFinding.controlState}</p>
+              <span className="font-bold text-zinc-900 dark:text-zinc-50">Remediation Guidelines</span>
+              <p className="text-zinc-500 dark:text-zinc-400">{selectedFinding.remediation || selectedFinding.controlState || 'Standard security patch lifecycle.'}</p>
             </div>
 
             <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-800">

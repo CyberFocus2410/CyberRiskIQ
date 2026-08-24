@@ -1,0 +1,57 @@
+{
+  "runId": "f6f3569be25b",
+  "target": "http://localhost:3000/",
+  "mode": "DEMONSTRATION",
+  "timestamp": "2026-08-24T18:25:54.261Z",
+  "assessmentEngine": "CyberRiskIQ AI Security Assessment Engine",
+  "findingsCount": 3,
+  "evidenceCount": 3,
+  "confidence": 0.96,
+  "findings": [
+    {
+      "id": "FND-SEC-1787595954261-1",
+      "assetId": "AST-001",
+      "title": "Broken Object Level Authorization (BOLA) in Payment Gateway API",
+      "vulnerability": "Broken Object Level Authorization (BOLA) in /api/v1/payments/charge",
+      "severity": "Critical",
+      "cvss": 9.8,
+      "exploitAvailable": true,
+      "internetExposed": true,
+      "evidence": "Autonomous agent successfully bypassed tenant authorization header on /api/v1/payments/charge?org_id=9812 to extract unauthorized billing transaction ledgers without admin token. Response code: HTTP 200 OK.",
+      "controlState": "WAF active but object-level authorization header validation omitted in microservice gateway.",
+      "remediation": "Implement server-side object-level permission verification and tenant scoping on all payment endpoints.",
+      "pocAttached": true,
+      "source": "CyberRiskIQ AI Security Assessment"
+    },
+    {
+      "id": "FND-SEC-1787595954261-2",
+      "assetId": "AST-002",
+      "title": "Hardcoded GitHub Access Token in CI/CD Workflow Files",
+      "vulnerability": "Hardcoded GitHub Access Token in CI/CD Workflow Files",
+      "severity": "High",
+      "cvss": 8.9,
+      "exploitAvailable": true,
+      "internetExposed": false,
+      "evidence": "Located active token ghp_**************************** in workflow YAML file. Validated token permissions: repo, write:packages, read:org.",
+      "controlState": "Git secret scanner inactive in pre-commit hooks.",
+      "remediation": "Revoke and rotate the exposed GitHub PAT. Configure GitHub Secret Store or HashiCorp Vault.",
+      "pocAttached": true,
+      "source": "CyberRiskIQ AI Security Assessment"
+    },
+    {
+      "id": "FND-SEC-1787595954261-3",
+      "assetId": "AST-003",
+      "title": "Unencrypted Database Backup Archive Exposed on Local Mount",
+      "vulnerability": "Unencrypted Database Backup Archive Exposed on Local Mount",
+      "severity": "High",
+      "cvss": 8.1,
+      "exploitAvailable": false,
+      "internetExposed": false,
+      "evidence": "Identified backup file backup_prod_dump_2026.sql without encryption on /var/backups/. File contains plaintext customer schema definitions.",
+      "controlState": "Disk encryption active but export archive lacks individual AES-256/GPG encryption.",
+      "remediation": "Enforce automated AES-256 / GPG encryption on all database dumps before file write.",
+      "pocAttached": true,
+      "source": "CyberRiskIQ AI Security Assessment"
+    }
+  ]
+}

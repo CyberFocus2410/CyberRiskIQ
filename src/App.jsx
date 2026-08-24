@@ -15,7 +15,7 @@ import {
   Moon,
   ShieldCheck
 } from 'lucide-react';
-import StrixControl from './components/StrixControl';
+import SecurityAssessmentControl from './components/SecurityAssessmentControl';
 // Import Views
 import LoginSetup from './components/LoginSetup';
 import Dashboard from './components/Dashboard';
@@ -93,7 +93,7 @@ export default function App() {
             </div>
             <div>
               <span className="font-extrabold text-sm tracking-tight text-zinc-950 dark:text-zinc-50 block">CyberRiskIQ</span>
-              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">SIH MVP V1.0</span>
+              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Risk & Investment Platform</span>
             </div>
           </div>
 
@@ -118,7 +118,7 @@ export default function App() {
               );
             })}
           </nav>
-        <StrixControl />
+        <SecurityAssessmentControl />
         </div>
 
         {/* Footer info */}

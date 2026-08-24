@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useRisk } from '../context/RiskContext';
-import { Target, Lock, Unlock, TrendingUp } from 'lucide-react';
+import { Target, Lock, Unlock, TrendingUp, Info, HelpCircle } from 'lucide-react';
 
 export default function InvestmentOptimizer() {
-  const { org, controlsLibrary, solveOptimization, getActiveStats, darkMode } = useRisk();
+  const { org, controlsLibrary, solveOptimization, getActiveStats, addAuditLog, darkMode } = useRisk();
   const [budgetInput, setBudgetInput] = useState(org.budget);
   const [lockedIn, setLockedIn] = useState([]);
   const [lockedOut, setLockedOut] = useState([]);
@@ -23,7 +23,7 @@ export default function InvestmentOptimizer() {
     return getActiveStats();
   }, [getActiveStats]);
 
-  // Calculate dynamic data points for the Curve (FR-15)
+  // Dynamic Spend Curve (Spec Section 18)
   const chartOptions = useMemo(() => {
     const isDark = darkMode;
     const points = [];
@@ -45,28 +45,35 @@ export default function InvestmentOptimizer() {
       });
     });
 
-    // Determine the optimal zone based on the current budget input
     const currentBudgetLakh = budgetInput / 100000;
     const optimalZoneStart = Math.max(0, currentBudgetLakh - 10);
     const optimalZoneEnd = currentBudgetLakh + 10;
 
     return {
+      title: {
+        text: 'Investment vs. Residual Risk Curve (Knapsack Frontier)',
+        left: 'center',
+        textStyle: {
+          color: isDark ? '#fafafa' : '#09090b',
+          fontSize: 12,
+          fontWeight: 'bold'
+        }
+      },
       tooltip: {
         trigger: 'axis',
         formatter: (params) => {
           const p = params[0].data;
-          return `Investment: <b>₹${p[0].toFixed(1)} Lakh</b><br/>Remaining EAL: <b>₹${p[1].toFixed(1)} Lakh</b>`;
+          return `Investment: <b>₹${p[0].toFixed(1)} Lakh</b><br/>Residual EAL: <b>₹${p[1].toFixed(1)} Lakh</b>`;
         },
         backgroundColor: isDark ? '#0c0c0f' : '#ffffff',
         borderColor: isDark ? '#1e1e24' : '#e4e4e7',
         textStyle: {
           color: isDark ? '#fafafa' : '#09090b',
-          fontSize: 11,
-          fontFamily: 'Inter, sans-serif'
+          fontSize: 11
         }
       },
       grid: {
-        top: 20,
+        top: 35,
         bottom: 40,
         left: 55,
         right: 20
@@ -83,18 +90,12 @@ export default function InvestmentOptimizer() {
         },
         axisLabel: {
           color: isDark ? '#71717a' : '#52525b',
-          fontSize: 10,
-          fontFamily: 'JetBrains Mono, monospace'
-        },
-        nameTextStyle: {
-          color: isDark ? '#a1a1aa' : '#71717a',
-          fontSize: 10,
-          fontWeight: 'bold'
+          fontSize: 10
         }
       },
       yAxis: {
         type: 'value',
-        name: 'Remaining EAL (Lakh)',
+        name: 'Residual EAL (Lakh)',
         nameLocation: 'middle',
         nameGap: 35,
         splitLine: {
@@ -104,13 +105,7 @@ export default function InvestmentOptimizer() {
         },
         axisLabel: {
           color: isDark ? '#71717a' : '#52525b',
-          fontSize: 10,
-          fontFamily: 'JetBrains Mono, monospace'
-        },
-        nameTextStyle: {
-          color: isDark ? '#a1a1aa' : '#71717a',
-          fontSize: 10,
-          fontWeight: 'bold'
+          fontSize: 10
         }
       },
       series: [
@@ -188,6 +183,7 @@ export default function InvestmentOptimizer() {
   }, [solveOptimization, baselineStats, budgetInput, lockedIn, lockedOut, controlsLibrary, darkMode]);
 
   const formatCurrency = (val) => {
+    if (!val && val !== 0) return '₹0';
     if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
     if (val >= 100000) return `₹${(val / 100000).toFixed(2)} Lakh`;
     return `₹${val.toLocaleString('en-IN')}`;
@@ -196,18 +192,22 @@ export default function InvestmentOptimizer() {
   const toggleLockIn = (id) => {
     if (lockedIn.includes(id)) {
       setLockedIn(prev => prev.filter(x => x !== id));
+      addAuditLog('OPTIMIZER_OVERRIDE', id, 'Removed Force-In constraint.');
     } else {
       setLockedIn(prev => [...prev, id]);
-      setLockedOut(prev => prev.filter(x => x !== id)); // remove from lock-out
+      setLockedOut(prev => prev.filter(x => x !== id));
+      addAuditLog('OPTIMIZER_OVERRIDE', id, 'Applied Force-In constraint.');
     }
   };
 
   const toggleLockOut = (id) => {
     if (lockedOut.includes(id)) {
       setLockedOut(prev => prev.filter(x => x !== id));
+      addAuditLog('OPTIMIZER_OVERRIDE', id, 'Removed Force-Out constraint.');
     } else {
       setLockedOut(prev => [...prev, id]);
-      setLockedIn(prev => prev.filter(x => x !== id)); // remove from lock-in
+      setLockedIn(prev => prev.filter(x => x !== id));
+      addAuditLog('OPTIMIZER_OVERRIDE', id, 'Applied Force-Out constraint.');
     }
   };
 
@@ -217,8 +217,24 @@ export default function InvestmentOptimizer() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Security Investment Optimizer</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
-            Solve budget-constrained selection problems (Knapsack) to compute the combination of controls producing the greatest reduction in financial exposure.
+            Solve budget-constrained 0/1 Knapsack optimization to compute the portfolio of controls yielding maximal reduction in financial exposure.
           </p>
+        </div>
+      </div>
+
+      {/* Formula & ROSI Banner */}
+      <div className="bg-gradient-to-r from-blue-900/10 via-emerald-900/10 to-indigo-900/10 border border-emerald-200 dark:border-emerald-900/40 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs">
+        <div>
+          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
+            Documented ROSI Formula (Spec Section 17)
+          </span>
+          <span className="font-mono text-zinc-800 dark:text-zinc-200">
+            ROSI = [(Risk Reduction Benefit - Investment Cost) / Investment Cost] × 100
+          </span>
+        </div>
+        <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg font-mono">
+          <span className="text-zinc-400 text-[10px] block">Current Portfolio ROSI</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-black text-base">{result.rosi}%</span>
         </div>
       </div>
 
@@ -239,13 +255,15 @@ export default function InvestmentOptimizer() {
                 value={budgetInput}
                 onChange={e => setBudgetInput(Number(e.target.value))}
               />
-              <span className="text-[10px] text-zinc-400 font-medium">Active organization budget is set to: {formatCurrency(org.budget)}</span>
+              <span className="text-[10px] text-zinc-400 font-medium">Active organization budget: {formatCurrency(org.budget)}</span>
             </div>
           </div>
 
           <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-4 transition-theme">
-            <h2 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Manual Overrides</h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Force control selection in or out of the optimization loop. The dynamic programming solver will recompute around these restrictions.</p>
+            <h2 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Constraint Overrides (Lock In / Out)</h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Force control selection in or out of the optimization loop. The knapsack solver will recompute around these mandatory restrictions.
+            </p>
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
               {controlsLibrary.map(ctrl => {
@@ -291,7 +309,7 @@ export default function InvestmentOptimizer() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-[#0c0c0f] p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
               <div className="space-y-1">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Recommended Cost</span>
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Recommended Spend</span>
                 <div className="text-xl font-extrabold text-zinc-950 dark:text-zinc-50 font-mono">{formatCurrency(result.totalCost)}</div>
                 <span className={`text-[10px] font-bold ${result.totalCost <= budgetInput ? 'text-emerald-500' : 'text-rose-500'}`}>
                   {result.totalCost <= budgetInput ? 'Within Budget Limit' : 'Budget Exceeded'}
@@ -311,14 +329,15 @@ export default function InvestmentOptimizer() {
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Return on Investment (ROSI)</span>
                 <div className="text-xl font-extrabold text-zinc-950 dark:text-zinc-50 font-mono">{result.rosi}%</div>
-                <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5"><TrendingUp className="w-3.5 h-3.5" /> High Efficiency Portfolio</span>
+                <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5"><TrendingUp className="w-3.5 h-3.5" /> Optimal Portfolio</span>
               </div>
             </div>
           </div>
 
           <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden transition-theme">
             <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-              <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Recommended Control Portfolio</h3>
+              <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Recommended Control Portfolio (Knapsack Output)</h3>
+              <span className="text-[10px] text-zinc-400 font-mono">Unallocated Budget: {formatCurrency(Math.max(0, budgetInput - result.totalCost))}</span>
             </div>
 
             {result.selection.length > 0 ? (
@@ -326,9 +345,9 @@ export default function InvestmentOptimizer() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-zinc-50/50 dark:bg-zinc-900/20 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
-                      <th className="p-4">Control Metric</th>
-                      <th className="p-4">Cost</th>
-                      <th className="p-4 text-right">EAL Reduction Target</th>
+                      <th className="p-4">Control Initiative</th>
+                      <th className="p-4">Implementation Cost</th>
+                      <th className="p-4 text-right">Target EAL Reduction</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/50 text-sm text-zinc-800 dark:text-zinc-200 font-medium">
@@ -351,21 +370,18 @@ export default function InvestmentOptimizer() {
               </div>
             ) : (
               <div className="p-8 text-center text-zinc-400 text-xs font-medium">
-                No controls are recommended. Try increasing the available budget or adjusting overrides.
+                No controls fit within the allocated budget. Try increasing available budget or adjusting overrides.
               </div>
             )}
           </div>
 
           {/* Investment vs Risk Reduction Curve Card */}
           <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 transition-theme">
-            <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-500" /> Spend Optimization Curve (Live)
-            </h3>
             <div className="h-72 w-full">
               <ReactECharts option={chartOptions} style={{ height: '100%', width: '100%' }} />
             </div>
             <p className="text-[10px] text-zinc-400 mt-2 leading-relaxed">
-              This curve is generated dynamically by solving the knapsack budget optimization across different budget levels, incorporating your manual overrides (forced controls).
+              This curve represents the knapsack frontier across varying budget allocations, illustrating the point of diminishing returns.
             </p>
           </div>
         </div>

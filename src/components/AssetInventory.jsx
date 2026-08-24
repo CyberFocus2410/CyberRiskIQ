@@ -112,14 +112,14 @@ export default function AssetInventory() {
           <div className={`transition-all duration-300 ${selectedAsset ? 'w-full lg:w-2/3' : 'w-full'} space-y-4`}>
             {/* Filters bar */}
             <div className="flex justify-between items-center bg-white dark:bg-[#0c0c0f] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="text-xs text-zinc-400 font-semibold uppercase">Business Unit Filter:</span>
                 <div className="flex flex-wrap gap-1">
                   {businessUnits.map((bu, i) => (
                     <button
                       key={i}
                       onClick={() => setFilterBu(bu)}
-                      className={`text-xs px-3 py-1 rounded-md border transition-all cursor-pointer ${
+                      className={`text-xs px-2.5 py-1 rounded-md border transition-all cursor-pointer ${
                         filterBu === bu
                           ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400 font-semibold'
                           : 'bg-white dark:bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
@@ -128,6 +128,9 @@ export default function AssetInventory() {
                       {bu}
                     </button>
                   ))}
+                </div>
+                <div className="text-xs text-zinc-400 font-mono pl-2">
+                  Showing {filteredAssets.length} of {assets.length} assets
                 </div>
               </div>
               

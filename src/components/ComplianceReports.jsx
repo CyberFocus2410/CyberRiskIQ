@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
 import { useRisk } from '../context/RiskContext';
-import { Award, FileText, Download, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Award, FileText, Download, CheckCircle, ShieldAlert, History, Clock } from 'lucide-react';
 
 export default function ComplianceReports() {
-  const { org, assets, getCompliancePosture, getEnterpriseStats } = useRisk();
+  const { org, assets, getCompliancePosture, getEnterpriseStats, auditLogs } = useRisk();
   const [activeFramework, setActiveFramework] = useState('nist');
   
   const posture = getCompliancePosture();
   const stats = getEnterpriseStats();
 
   const handleExport = (reportType) => {
-    // Print/export helper
     window.print();
   };
 
   const nistControls = [
-    { code: 'ID.AM-1', name: 'Physical devices and systems inventoried', status: 'Compliant', gap: 'None' },
+    { code: 'ID.AM-1', name: 'Physical & Cloud systems inventoried', status: 'Compliant', gap: 'None' },
     { code: 'PR.AC-1', name: 'Identities and credentials managed', status: 'Partial', gap: 'MFA not enforced on service accounts' },
     { code: 'PR.DS-1', name: 'Data-at-rest is protected (Encrypted)', status: 'Compliant', gap: 'None' },
     { code: 'DE.AE-1', name: 'Anomalous events detected and analyzed', status: 'Compliant', gap: 'None' },
@@ -23,7 +22,7 @@ export default function ComplianceReports() {
   ];
 
   const isoControls = [
-    { code: 'A.9.1.1', name: 'Access control policy', status: 'Compliant', gap: 'None' },
+    { code: 'A.9.1.1', name: 'Access control policy & privileged account enforcement', status: 'Compliant', gap: 'None' },
     { code: 'A.12.6.1', name: 'Management of technical vulnerabilities', status: 'Partial', gap: 'Apache package updates delayed' },
     { code: 'A.14.1.1', name: 'Information security requirements analysis', status: 'Compliant', gap: 'None' },
     { code: 'A.17.1.1', name: 'Planning information security continuity', status: 'Compliant', gap: 'None' }
@@ -62,14 +61,14 @@ export default function ComplianceReports() {
     <div className="space-y-6 print:p-8 print:bg-white print:text-black">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4 print:hidden">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Compliance & Reports</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Compliance, Governance & Audit</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-            Evaluate framework compliance (NIST, ISO, RBI, SEBI) mapped dynamically to live telemetry, and export audit-ready summaries.
+            Dynamic regulatory framework posture (NIST CSF, ISO/IEC 27001, RBI CSF, SEBI CSCRF) and platform audit logs.
           </p>
         </div>
       </div>
 
-      {/* Posture Score Row */}
+      {/* Posture Score Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-2">
         <div 
           onClick={() => setActiveFramework('nist')}
@@ -186,12 +185,50 @@ export default function ComplianceReports() {
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                       c.status === 'Compliant' 
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30'
-                        : 'bg-amber-55 text-amber-800 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30'
+                        : 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30'
                     }`}>
                       {c.status}
                     </span>
                   </td>
                   <td className="p-4 text-right text-xs text-zinc-500 dark:text-zinc-400">{c.gap}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Platform Audit Trail (Spec Section 24) */}
+      <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden transition-theme">
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+          <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
+            <History className="w-4 h-4 text-blue-500" /> Platform Audit Trail & Evidence Log
+          </h3>
+          <span className="text-[10px] text-zinc-400 font-mono">Immutable Action Records</span>
+        </div>
+        <div className="overflow-x-auto max-h-60 overflow-y-auto">
+          <table className="w-full text-left border-collapse font-mono text-xs">
+            <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-400">
+              <tr>
+                <th className="p-3">Timestamp</th>
+                <th className="p-3">User</th>
+                <th className="p-3">Action</th>
+                <th className="p-3">Entity</th>
+                <th className="p-3">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300">
+              {auditLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/40">
+                  <td className="p-3 text-zinc-400">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                  <td className="p-3 font-semibold">{log.user}</td>
+                  <td className="p-3">
+                    <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold text-[10px]">
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="p-3 font-bold">{log.entity}</td>
+                  <td className="p-3 text-zinc-500 dark:text-zinc-400">{log.details}</td>
                 </tr>
               ))}
             </tbody>
@@ -209,7 +246,7 @@ export default function ComplianceReports() {
           <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4 flex flex-col justify-between bg-zinc-50/50 dark:bg-zinc-900/30">
             <div className="space-y-1">
               <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">Executive Briefing</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">PDF summary of cyber liability liability factors, budget allocations, and EAL delta indicators tailored for C-Suite board review.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">PDF summary of cyber liability factors, budget allocations, and EAL delta indicators tailored for C-Suite board review.</p>
             </div>
             <button 
               onClick={() => handleExport('exec')}
@@ -222,7 +259,7 @@ export default function ComplianceReports() {
           <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4 flex flex-col justify-between bg-zinc-50/50 dark:bg-zinc-900/30">
             <div className="space-y-1">
               <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">Technical Analysis</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Complete register of assets, raw and correlated findings (including Strix validations and validation proofs) for security engineering.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Complete register of assets, raw and correlated findings (including AI Security Assessment proofs) for security engineering.</p>
             </div>
             <button 
               onClick={() => handleExport('tech')}
@@ -235,7 +272,7 @@ export default function ComplianceReports() {
           <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4 flex flex-col justify-between bg-zinc-50/50 dark:bg-zinc-900/30">
             <div className="space-y-1">
               <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">Compliance Audit Pack</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Details mapping control operating values to NIST CSF and ISO 27051 sections, detailing gaps and evidentiary records.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Details mapping control operating values to NIST CSF, ISO 27001, RBI CSF, and SEBI CSCRF sections.</p>
             </div>
             <button 
               onClick={() => handleExport('comp')}
