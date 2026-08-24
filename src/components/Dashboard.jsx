@@ -11,7 +11,8 @@ export default function Dashboard({ setActiveTab }) {
     getEnterpriseStats, 
     getActiveStats,
     solveOptimization,
-    controlsLibrary
+    controlsLibrary,
+    darkMode
   } = useRisk();
 
   // Fetch current (possibly simulated) stats and baseline active stats
@@ -68,7 +69,7 @@ export default function Dashboard({ setActiveTab }) {
         text: 'Expected Annual Loss (EAL) vs. Cumulative Security Investment',
         left: 'center',
         textStyle: {
-          color: document.documentElement.classList.contains('dark') ? '#fafafa' : '#09090b',
+          color: darkMode ? '#fafafa' : '#09090b',
           fontSize: 14,
           fontFamily: 'Inter, sans-serif'
         }
@@ -79,10 +80,10 @@ export default function Dashboard({ setActiveTab }) {
           const p = params[0].data;
           return `Investment: <b>₹${p[0].toFixed(1)} Lakh</b><br/>Remaining EAL: <b>₹${p[1].toFixed(1)} Lakh</b>`;
         },
-        backgroundColor: document.documentElement.classList.contains('dark') ? '#0c0c0f' : '#ffffff',
-        borderColor: document.documentElement.classList.contains('dark') ? '#1e1e24' : '#e4e4e7',
+        backgroundColor: darkMode ? '#0c0c0f' : '#ffffff',
+        borderColor: darkMode ? '#1e1e24' : '#e4e4e7',
         textStyle: {
-          color: document.documentElement.classList.contains('dark') ? '#fafafa' : '#09090b'
+          color: darkMode ? '#fafafa' : '#09090b'
         }
       },
       grid: {
@@ -98,11 +99,11 @@ export default function Dashboard({ setActiveTab }) {
         nameGap: 30,
         splitLine: {
           lineStyle: {
-            color: document.documentElement.classList.contains('dark') ? '#1e1e24' : '#e4e4e7'
+            color: darkMode ? '#1e1e24' : '#e4e4e7'
           }
         },
         axisLabel: {
-          color: document.documentElement.classList.contains('dark') ? '#71717a' : '#52525b'
+          color: darkMode ? '#71717a' : '#52525b'
         }
       },
       yAxis: {
@@ -112,11 +113,11 @@ export default function Dashboard({ setActiveTab }) {
         nameGap: 40,
         splitLine: {
           lineStyle: {
-            color: document.documentElement.classList.contains('dark') ? '#1e1e24' : '#e4e4e7'
+            color: darkMode ? '#1e1e24' : '#e4e4e7'
           }
         },
         axisLabel: {
-          color: document.documentElement.classList.contains('dark') ? '#71717a' : '#52525b'
+          color: darkMode ? '#71717a' : '#52525b'
         }
       },
       series: [
@@ -169,7 +170,7 @@ export default function Dashboard({ setActiveTab }) {
         }
       ]
     };
-  }, [baselineStats]);
+  }, [baselineStats, darkMode, solveOptimization]);
 
   return (
     <div className="space-y-6">
