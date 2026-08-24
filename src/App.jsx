@@ -27,10 +27,13 @@ import AnalystChat from './components/AnalystChat';
 import ScenarioSimulator from './components/ScenarioSimulator';
 import InvestmentOptimizer from './components/InvestmentOptimizer';
 import ComplianceReports from './components/ComplianceReports';
+import LandingPage from './components/LandingPage';
+import CoverPage from './components/CoverPage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [darkMode, setDarkMode] = useState(true);
+  const [viewState, setViewState] = useState('cover'); // 'cover' | 'landing' | 'app'
+  const { darkMode, setDarkMode } = useRisk();
 
   // Apply dark mode styling class
   useEffect(() => {
@@ -69,6 +72,14 @@ export default function App() {
       default: return <Dashboard setActiveTab={setActiveTab} />;
     }
   };
+
+  if (viewState === 'cover') {
+    return <CoverPage onEnter={() => setViewState('landing')} />;
+  }
+
+  if (viewState === 'landing') {
+    return <LandingPage onEnter={() => setViewState('app')} />;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 transition-colors flex">
