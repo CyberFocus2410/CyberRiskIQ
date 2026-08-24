@@ -246,6 +246,7 @@ export const RiskProvider = ({ children }) => {
 
   const [assets, setAssets] = useState(INITIAL_ASSETS);
   const [findings, setFindings] = useState(INITIAL_FINDINGS);
+  const [darkMode, setDarkMode] = useState(true);
   const [ingestionHistory, setIngestionHistory] = useState([
     { id: 'BCH-001', source: 'Strix AI Pentest', timestamp: '2026-08-24T02:00:00Z', count: 2, status: 'Success' },
     { id: 'BCH-002', source: 'Internal Scanner', timestamp: '2026-08-20T08:15:00Z', count: 3, status: 'Success' }
@@ -662,7 +663,9 @@ export const RiskProvider = ({ children }) => {
         getCompliancePosture,
         controlsLibrary: CONTROLS_LIBRARY,
         addAsset,
-        addFinding
+        addFinding,
+        darkMode,
+        setDarkMode
       }}
     >
       {children}
