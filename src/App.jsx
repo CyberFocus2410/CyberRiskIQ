@@ -15,7 +15,7 @@ import {
   Moon,
   ShieldCheck
 } from 'lucide-react';
-
+import StrixControl from './components/StrixControl';
 // Import Views
 import LoginSetup from './components/LoginSetup';
 import Dashboard from './components/Dashboard';
@@ -118,6 +118,7 @@ export default function App() {
               );
             })}
           </nav>
+        <StrixControl />
         </div>
 
         {/* Footer info */}

@@ -247,6 +247,8 @@ export const RiskProvider = ({ children }) => {
   const [assets, setAssets] = useState(INITIAL_ASSETS);
   const [findings, setFindings] = useState(INITIAL_FINDINGS);
   const [darkMode, setDarkMode] = useState(true);
+  // import the service at top (will be dynamically imported where needed)
+
   const [ingestionHistory, setIngestionHistory] = useState([
     { id: 'BCH-001', source: 'Strix AI Pentest', timestamp: '2026-08-24T02:00:00Z', count: 2, status: 'Success' },
     { id: 'BCH-002', source: 'Internal Scanner', timestamp: '2026-08-20T08:15:00Z', count: 3, status: 'Success' }
@@ -562,6 +564,46 @@ export const RiskProvider = ({ children }) => {
         },
         ...prev
       ]);
+    }
+  };
+
+  // Ingest Strix JSON results
+  const ingestStrixFindings = async (dataOrRunId) => {
+    try {
+      let findingsList = [];
+      if (Array.isArray(dataOrRunId)) {
+        findingsList = dataOrRunId;
+      } else if (dataOrRunId && Array.isArray(dataOrRunId.findings)) {
+        findingsList = dataOrRunId.findings;
+      } else if (typeof dataOrRunId === 'string') {
+        const res = await fetch(`/api/strix/result/${dataOrRunId}`);
+        if (res.ok) {
+          const json = await res.json();
+          findingsList = json.results?.findings || json.findings || [];
+        }
+      }
+
+      if (findingsList.length === 0) return;
+
+      const formatted = findingsList.map((f, idx) => ({
+        id: `FND-STRIX-${Date.now()}-${idx}`,
+        source: 'Strix AI Pentest',
+        assetId: f.assetId || assets[0]?.id || 'AST-001',
+        vulnerability: f.vulnerability || f.title || 'Discovered Strix Vulnerability',
+        severity: f.severity || 'High',
+        cvss: parseFloat(f.cvss) || 7.5,
+        exploitAvailable: f.exploitAvailable === true || f.exploitAvailable === 'Yes' || !!f.exploit,
+        internetExposed: f.internetExposed === true || f.internetExposed === 'Yes',
+        evidence: f.evidence || f.description || 'PoC generated and verified via Strix agent.',
+        controlState: f.controlState || 'Control evasion confirmed during automated penetration test.',
+        discoveredAt: new Date().toISOString(),
+        status: 'Open',
+        pocAttached: true
+      }));
+
+      ingestSecurityData('Strix AI Pentest', formatted);
+    } catch (e) {
+      console.error('Failed to ingest Strix results:', e);
     }
   };
 

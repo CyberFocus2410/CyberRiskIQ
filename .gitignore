@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Strix local runtime runs
+strix_runs/
+strix/
+
