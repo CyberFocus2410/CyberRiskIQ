@@ -4,7 +4,7 @@ import { useRisk } from '../context/RiskContext';
 import { Landmark, ArrowUpRight, ShieldCheck } from 'lucide-react';
 
 export default function FinancialAnalysis() {
-  const { assets, calculateAssetRiskScore, calculateAssetEAL, calculateAssetFinancialImpact } = useRisk();
+  const { assets, calculateAssetRiskScore, calculateAssetEAL, calculateAssetFinancialImpact, darkMode } = useRisk();
 
   const formatCurrency = (val) => {
     if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
@@ -60,7 +60,7 @@ export default function FinancialAnalysis() {
       text: 'Expected Annual Loss (EAL) by Business Unit',
       left: 'center',
       textStyle: {
-        color: document.documentElement.classList.contains('dark') ? '#fafafa' : '#09090b',
+        color: darkMode ? '#fafafa' : '#09090b',
         fontSize: 14,
         fontFamily: 'Inter, sans-serif'
       }
@@ -73,28 +73,29 @@ export default function FinancialAnalysis() {
       {
         name: 'Business Unit EAL',
         type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
+        radius: ['35%', '60%'],
+        center: ['50%', '60%'],
+        avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: document.documentElement.classList.contains('dark') ? '#0c0c0f' : '#ffffff',
+          borderColor: darkMode ? '#0c0c0f' : '#ffffff',
           borderWidth: 2
         },
         label: {
           show: true,
-          color: document.documentElement.classList.contains('dark') ? '#fafafa' : '#09090b'
+          color: darkMode ? '#fafafa' : '#09090b'
         },
         data: buChartData
       }
     ]
-  }), [buChartData]);
+  }), [buChartData, darkMode]);
 
   const catOption = useMemo(() => ({
     title: {
       text: 'Expected Annual Loss (EAL) by Impact Category',
       left: 'center',
       textStyle: {
-        color: document.documentElement.classList.contains('dark') ? '#fafafa' : '#09090b',
+        color: darkMode ? '#fafafa' : '#09090b',
         fontSize: 14,
         fontFamily: 'Inter, sans-serif'
       }
@@ -112,12 +113,12 @@ export default function FinancialAnalysis() {
     xAxis: {
       type: 'value',
       axisLabel: {
-        color: document.documentElement.classList.contains('dark') ? '#71717a' : '#52525b',
+        color: darkMode ? '#71717a' : '#52525b',
         formatter: '₹{value}L'
       },
       splitLine: {
         lineStyle: {
-          color: document.documentElement.classList.contains('dark') ? '#1e1e24' : '#e4e4e7'
+          color: darkMode ? '#1e1e24' : '#e4e4e7'
         }
       }
     },
@@ -125,7 +126,7 @@ export default function FinancialAnalysis() {
       type: 'category',
       data: categoryChartData.map(c => c.name),
       axisLabel: {
-        color: document.documentElement.classList.contains('dark') ? '#fafafa' : '#09090b'
+        color: darkMode ? '#fafafa' : '#09090b'
       }
     },
     series: [
@@ -138,7 +139,7 @@ export default function FinancialAnalysis() {
         }
       }
     ]
-  }), [categoryChartData]);
+  }), [categoryChartData, darkMode]);
 
   return (
     <div className="space-y-6">
