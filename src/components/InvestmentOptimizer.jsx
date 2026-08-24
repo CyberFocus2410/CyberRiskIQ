@@ -1,13 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useRisk } from '../context/RiskContext';
 import { Target, Lock, Unlock, TrendingUp } from 'lucide-react';
 
 export default function InvestmentOptimizer() {
-  const { org, controlsLibrary, solveOptimization, getActiveStats } = useRisk();
+  const { org, controlsLibrary, solveOptimization, getActiveStats, darkMode } = useRisk();
   const [budgetInput, setBudgetInput] = useState(org.budget);
   const [lockedIn, setLockedIn] = useState([]);
   const [lockedOut, setLockedOut] = useState([]);
+
+  useEffect(() => {
+    setBudgetInput(org.budget);
+  }, [org.budget]);
 
   // Calculate results on the fly based on budget input & overrides
   const result = useMemo(() => {
@@ -21,7 +25,7 @@ export default function InvestmentOptimizer() {
 
   // Calculate dynamic data points for the Curve (FR-15)
   const chartOptions = useMemo(() => {
-    const isDark = document.documentElement.classList.contains('dark');
+    const isDark = darkMode;
     const points = [];
     const totalCostOfAllControls = controlsLibrary.reduce((sum, c) => sum + c.cost, 0);
     
@@ -181,7 +185,7 @@ export default function InvestmentOptimizer() {
         }
       ]
     };
-  }, [solveOptimization, baselineStats, budgetInput, lockedIn, lockedOut, controlsLibrary]);
+  }, [solveOptimization, baselineStats, budgetInput, lockedIn, lockedOut, controlsLibrary, darkMode]);
 
   const formatCurrency = (val) => {
     if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
