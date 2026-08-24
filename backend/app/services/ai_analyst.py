@@ -43,7 +43,7 @@ def query_ai_risk_analyst(
     structured_data = {}
 
     # Intent 1: Highest Financial Cyber Risk / Highest EAL
-    if any(k in normalized for k in ["highest risk", "biggest risk", "maximum risk", "highest eal", "top risk", "critical asset"]):
+    if (any(k in normalized for k in ["highest", "biggest", "maximum", "top", "critical"]) and any(k in normalized for k in ["risk", "eal", "exposure", "asset", "liability"])) or "highest financial" in normalized:
         intent = "highest_financial_risk"
         max_eal = -1.0
         max_asset = None

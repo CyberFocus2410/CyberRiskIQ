@@ -444,6 +444,57 @@ export const RiskProvider = ({ children }) => {
     }
   });
 
+  // Attempt backend synchronization on initial load
+  useEffect(() => {
+    const syncWithBackend = async () => {
+      try {
+        const summaryRes = await fetch('/api/dashboard/summary');
+        if (summaryRes.ok) {
+          const summary = await summaryRes.json();
+          if (summary.organization) {
+            setOrg(prev => ({
+              ...prev,
+              name: summary.organization.name,
+              industry: summary.organization.industry,
+              employees: summary.organization.employees,
+              annualRevenue: summary.organization.annual_revenue || summary.organization.annualRevenue,
+              budget: summary.organization.budget,
+              riskAppetite: summary.organization.risk_appetite || summary.organization.riskAppetite
+            }));
+          }
+        }
+
+        const assetsRes = await fetch('/api/assets');
+        if (assetsRes.ok) {
+          const backendAssets = await assetsRes.json();
+          if (Array.isArray(backendAssets) && backendAssets.length > 0) {
+            setAssets(backendAssets);
+          }
+        }
+
+        const findingsRes = await fetch('/api/findings');
+        if (findingsRes.ok) {
+          const backendFindings = await findingsRes.json();
+          if (Array.isArray(backendFindings) && backendFindings.length > 0) {
+            setFindings(backendFindings);
+          }
+        }
+
+        const logsRes = await fetch('/api/audit-logs');
+        if (logsRes.ok) {
+          const backendLogs = await logsRes.json();
+          if (Array.isArray(backendLogs) && backendLogs.length > 0) {
+            setAuditLogs(backendLogs);
+          }
+        }
+      } catch (err) {
+        // Backend not active; continue with local client-side persistence
+      }
+    };
+
+    syncWithBackend();
+  }, []);
+
   // Persistent storage synchronizer
   useEffect(() => {
     try {
@@ -490,8 +541,8 @@ export const RiskProvider = ({ children }) => {
     if (finding.exploitAvailable || finding.exploit_available) base += 1.2;
     
     const expOverride = exposureOverride || simulatedExposure;
-    const isExposed = expOverride[finding.assetId]?.internetExposure !== undefined
-      ? expOverride[finding.assetId].internetExposure === 'Yes'
+    const isExposed = expOverride[finding.assetId || finding.asset_id]?.internetExposure !== undefined
+      ? expOverride[finding.assetId || finding.asset_id].internetExposure === 'Yes'
       : asset?.internetExposure === 'Yes' || asset?.internet_exposure === 'Yes';
 
     if (isExposed) base += 1.5;
@@ -514,7 +565,7 @@ export const RiskProvider = ({ children }) => {
   };
 
   const calculateAssetRiskScore = (asset, controlsOverride = null, exposureOverride = null) => {
-    const assetFindings = findings.filter(f => (f.assetId === asset.id || f.asset_id === asset.id) && f.status === 'Open');
+    const assetFindings = findings.filter(f => (f.assetId === asset.id || f.asset_id === asset.id) && (f.status === 'Open' || f.status === 'In Progress' || !f.status));
     if (assetFindings.length === 0) return 10;
 
     const correlatedList = assetFindings.map(f => calculateCorrelatedRiskIndicator(f, asset, exposureOverride));
@@ -543,14 +594,14 @@ export const RiskProvider = ({ children }) => {
   };
 
   const calculateAssetFinancialImpact = (asset) => {
-    const revenueScaler = org.annualRevenue / 500000000;
-    const employeeScaler = org.employees / 1200;
+    const revenueScaler = (org.annualRevenue || 500000000) / 500000000;
+    const employeeScaler = (org.employees || 1200) / 1200;
 
-    const downtimeImpact = ((asset.downtimeCostPerHour || 50000) * revenueScaler) * 4;
-    const dataImpact = Math.round((asset.recordsExposed || 5000) * employeeScaler) * (asset.costPerRecord || 150);
-    const regulatoryFines = (asset.regulatoryPenalty || 500000) * revenueScaler;
-    const recoveryCosts = (asset.recoveryCost || 300000) * employeeScaler;
-    const reputationCosts = (asset.reputationFactor || 500000) * revenueScaler;
+    const downtimeImpact = ((asset.downtimeCostPerHour || asset.downtime_cost_per_hour || 50000) * revenueScaler) * 4;
+    const dataImpact = Math.round((asset.recordsExposed || asset.records_exposed || 5000) * employeeScaler) * (asset.costPerRecord || asset.cost_per_record || 150);
+    const regulatoryFines = (asset.regulatoryPenalty || asset.regulatory_penalty || 500000) * revenueScaler;
+    const recoveryCosts = (asset.recoveryCost || asset.recovery_cost || 300000) * employeeScaler;
+    const reputationCosts = (asset.reputationFactor || asset.reputation_factor || 500000) * revenueScaler;
 
     return Math.round(downtimeImpact + dataImpact + regulatoryFines + recoveryCosts + reputationCosts);
   };
@@ -561,11 +612,11 @@ export const RiskProvider = ({ children }) => {
     const financialImpact = calculateAssetFinancialImpact(asset);
     
     const ctrlOverride = controlsOverride || simulatedControls;
-    let recoveryCostSimulated = asset.recoveryCost || 300000;
+    let recoveryCostSimulated = asset.recoveryCost || asset.recovery_cost || 300000;
     if (ctrlOverride.backup) {
-      recoveryCostSimulated = (asset.recoveryCost || 300000) * 0.3;
+      recoveryCostSimulated = (asset.recoveryCost || asset.recovery_cost || 300000) * 0.3;
     }
-    const adjustedFinancialImpact = financialImpact - ((asset.recoveryCost || 300000) - recoveryCostSimulated);
+    const adjustedFinancialImpact = financialImpact - ((asset.recoveryCost || asset.recovery_cost || 300000) - recoveryCostSimulated);
 
     return Math.round(probability * adjustedFinancialImpact);
   };
@@ -871,25 +922,60 @@ export const RiskProvider = ({ children }) => {
     };
   };
 
-  const addAsset = (newAsset) => {
+  const addAsset = async (newAsset) => {
     const assetId = `AST-${String(assets.length + 1).padStart(3, '0')}`;
-    setAssets(prev => [...prev, {
+    const fullAsset = {
       ...newAsset,
       id: assetId,
       controls: newAsset.controls || { mfa: 30, patching: 30, edr: 30, segmentation: 30, monitoring: 30, backup: 30 }
-    }]);
+    };
+    setAssets(prev => [...prev, fullAsset]);
     addAuditLog('ASSET_ADDED', assetId, `Added asset ${newAsset.name}`);
+
+    // Sync to backend if accessible
+    try {
+      await fetch('/api/assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newAsset.name,
+          type: newAsset.type || 'Application',
+          owner: newAsset.owner || 'IT Operations',
+          business_unit: newAsset.businessUnit || 'Retail Banking',
+          criticality: newAsset.criticality || 'Medium',
+          data_sensitivity: newAsset.dataSensitivity || 'Medium',
+          internet_exposure: newAsset.internetExposure || 'No'
+        })
+      });
+    } catch (_) {}
   };
 
-  const addFinding = (newFinding) => {
+  const addFinding = async (newFinding) => {
     const findingId = `FND-${String(findings.length + 1).padStart(3, '0')}`;
-    setFindings(prev => [{
+    const fullFinding = {
       ...newFinding,
       id: findingId,
       discoveredAt: new Date().toISOString(),
       status: 'Open'
-    }, ...prev]);
+    };
+    setFindings(prev => [fullFinding, ...prev]);
     addAuditLog('FINDING_ADDED', findingId, `Added finding ${newFinding.vulnerability} on ${newFinding.assetId}`);
+
+    // Sync to backend if accessible
+    try {
+      await fetch('/api/findings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          asset_id: newFinding.assetId || 'AST-001',
+          vulnerability: newFinding.vulnerability,
+          severity: newFinding.severity || 'Medium',
+          cvss: parseFloat(newFinding.cvss) || 5.0,
+          exploit_available: newFinding.exploitAvailable === 'Yes' || newFinding.exploitAvailable === true,
+          internet_exposed: newFinding.internetExposed === 'Yes' || newFinding.internetExposed === true
+        })
+      });
+    } catch (_) {}
   };
 
   return (

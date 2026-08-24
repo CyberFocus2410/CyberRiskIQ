@@ -23,7 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
-# Strix local runtime runs
+# Security assessment local runtime runs
+assessment_runs/
 strix_runs/
 strix/
 
+# Python & SQLite
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.sqlite3
+.pytest_cache/
+.env
