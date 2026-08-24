@@ -432,15 +432,10 @@ export const RiskProvider = ({ children }) => {
       tempControls[key] = true;
       
       // Calculate EAL under this single control simulation
-      const currentSim = { ...simulatedControls };
-      setSimulatedControls(tempControls);
-      
       let tempEal = 0;
       assets.forEach(asset => {
-        tempEal += calculateAssetEAL(asset);
+        tempEal += calculateAssetEAL(asset, tempControls);
       });
-      
-      setSimulatedControls(currentSim); // restore
       
       const ealReduction = baseStats.eal - tempEal;
       
