@@ -43,3 +43,23 @@ body {
 .transition-theme {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
 }
+
+.glitch-flicker {
+  animation: flicker-in 2s cubic-bezier(0.1, 0.7, 1.0, 0.1) forwards;
+  opacity: 0;
+}
+@keyframes flicker-in {
+  0% { opacity: 0; }
+  10% { opacity: 0.8; }
+  20% { opacity: 0; }
+  30% { opacity: 1; }
+  40% { opacity: 0; }
+  50% { opacity: 0.9; }
+  60% { opacity: 0.1; }
+  100% { opacity: 1; }
+}
+
+.glow-btn:hover {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+  border-color: #00f0ff;
+}
