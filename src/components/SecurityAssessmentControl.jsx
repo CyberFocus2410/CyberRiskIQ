@@ -62,6 +62,7 @@ export default function SecurityAssessmentControl() {
   }, []);
 
   const resetGraph = (initialTarget) => {
+    setLog('');
     setGraphNodes([
       {
         id: 'node-target-root',
@@ -90,7 +91,14 @@ export default function SecurityAssessmentControl() {
     }
 
     if (event.message) {
-      setLog(prev => prev + event.message + '\n');
+      setLog(prev => {
+        // Prevent exact duplicate adjacent lines
+        const lines = prev.split('\n');
+        if (lines.length > 1 && lines[lines.length - 2] === event.message) {
+          return prev;
+        }
+        return prev + event.message + '\n';
+      });
     }
 
     // Add or update node
@@ -147,11 +155,19 @@ export default function SecurityAssessmentControl() {
     // Handle terminal status
     if (event.status === 'completed') {
       setStatus('done');
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       if (event.results && ingestAssessmentFindings) {
         ingestAssessmentFindings(event.results);
       }
     } else if (event.status === 'failed') {
       setStatus('error');
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
       setErrorMessage(event.error || event.message || 'Assessment failed on target.');
     }
   };
@@ -189,7 +205,10 @@ export default function SecurityAssessmentControl() {
       setRunId(activeRunId);
 
       // Connect to real-time Server-Sent Events (SSE)
-      if (eventSourceRef.current) eventSourceRef.current.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
 
       const sseUrl = `/api/assessment/events/${activeRunId}`;
       const es = new EventSource(sseUrl);
@@ -199,10 +218,18 @@ export default function SecurityAssessmentControl() {
         try {
           const parsedEvent = JSON.parse(e.data);
           handleAssessmentEvent(parsedEvent);
+          if (parsedEvent.status === 'completed' || parsedEvent.status === 'failed') {
+            es.close();
+            eventSourceRef.current = null;
+          }
         } catch (_) {}
       };
 
       es.onerror = () => {
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
         // Fallback polling if SSE disconnects
         fetchFallbackResults(activeRunId);
       };
@@ -230,9 +257,27 @@ export default function SecurityAssessmentControl() {
     } catch (_) {}
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!runId) return;
-    window.open(`/api/assessment/report/${runId}`, '_blank');
+    try {
+      const resp = await fetch(`/api/assessment/report/${runId}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CyberRiskIQ-Quantitative-Assessment-${runId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        window.open(`/api/assessment/report/${runId}`, '_blank');
+      }
+    } catch (_) {
+      window.open(`/api/assessment/report/${runId}`, '_blank');
+    }
   };
 
   const getNodeColor = (node) => {
