@@ -62,6 +62,7 @@ def resolve_asset_internet_exposure(
     )
     return False
 
+# FIRST CVSS v3.1 exploitability vector parser
 def calculate_cvss_exploitability_subscore(cvss_vector: Optional[str], default_score: float = 1.0) -> float:
     """
     Parses CVSS v3.1 vector string into exact Exploitability subscore (0.0 to 3.89).
