@@ -1,0 +1,14 @@
+CyberRiskIQ
+Copyright 2026 FinSecure / CyberRiskIQ Team
+
+This product includes software developed by third-party open-source projects:
+1. Autonomous AI Security Assessment Engine
+   Licensed under the Apache License, Version 2.0 (the "License").
+   You may obtain a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0
+
+2. Third-Party Software Acknowledgments:
+   - LiteLLM (LiteLLM Team) - Apache License 2.0
+   - Caido (Caido Labs) - Community Edition
+   - Nuclei (ProjectDiscovery) - MIT License
+   - Playwright (Microsoft) - Apache License 2.0
+   - Bubble Tea (Charmbracelet) - MIT License
