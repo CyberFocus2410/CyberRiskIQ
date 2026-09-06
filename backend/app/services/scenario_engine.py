@@ -16,7 +16,8 @@ def simulate_scenario(
     simulated_exposure: Dict[str, Any],
     org_revenue: float = 500000000.0,
     org_employees: int = 1200,
-    risk_appetite: str = "Medium"
+    risk_appetite: str = "Medium",
+    delay_30_days: bool = False
 ) -> Dict[str, Any]:
     """
     Simulates hypothetical defensive changes against cloned state.
@@ -45,6 +46,11 @@ def simulate_scenario(
     simulated_financials = aggregate_enterprise_financials(
         assets, simulated_scores, org_revenue, org_employees, simulated_controls
     )
+
+    sim_eal = simulated_financials["total_eal"]
+    if delay_30_days:
+        sim_eal = int(round(sim_eal * 1.15)) # 15% delay exposure penalty
+        simulated_financials["total_eal"] = sim_eal
 
     # 3. Deltas & Reductions
     eal_delta = baseline_financials["total_eal"] - simulated_financials["total_eal"]
