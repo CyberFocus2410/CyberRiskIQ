@@ -15,6 +15,9 @@ import json
 import time
 import asyncio
 import hashlib
+import shutil
+import re
+import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Set
 from sqlalchemy.orm import Session
@@ -23,11 +26,72 @@ from backend.app.db.database import SessionLocal
 from backend.app.models import models
 from backend.app.services.report_pipeline import generate_quantitative_report
 
+logger = logging.getLogger(__name__)
+
 RUNS_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "assessment_runs"))
 
 # Real-time event listener registries (for SSE and WebSocket connections)
 # Maps run_id -> set of asyncio.Queue instances
 _EVENT_LISTENERS: Dict[str, Set[asyncio.Queue]] = {}
+
+def sanitize_engine_error_message(raw_error: str) -> str:
+    """
+    Sanitizes raw error/stderr messages server-side before storing into
+    `error_message` or returning via API/WebSocket/SSE to client.
+    
+    1. Redacts file system paths containing package/repo names ('strix', 'zeroday', local user dirs).
+    2. Redacts Python module references ('strix.interface', 'zeroday.cli', etc.).
+    3. Replaces internal names with generic CyberRiskIQ engine references.
+    4. Preserves high-level actionable error messages (e.g. Docker down, target unreachable, timeout).
+    """
+    if not raw_error:
+        return "Assessment failed during execution."
+    
+    sanitized = raw_error
+    
+    # 1. Redact Windows and Unix file paths containing engine names
+    sanitized = re.sub(
+        r'[A-Za-z]:\\[^:\n\r]+?\\(strix|zeroday)[^\s\n\r]*',
+        '[assessment engine internal path]',
+        sanitized,
+        flags=re.IGNORECASE
+    )
+    sanitized = re.sub(
+        r'(/[\w.-]+)+/(strix|zeroday)[^\s\n\r]*',
+        '[assessment engine internal path]',
+        sanitized,
+        flags=re.IGNORECASE
+    )
+    
+    # 2. Clean up CLI branding headers/panels first
+    sanitized = re.sub(r'\[(bold )?white\](STRIX|ZERODAY)\[/?\]', 'CYBERRISKIQ ENGINE', sanitized, flags=re.IGNORECASE)
+
+    # 3. Redact Python module namespace references
+    sanitized = re.sub(
+        r'\b(strix|zeroday)(_agent)?(\.[a-zA-Z0-9_]+)+\b',
+        'assessment_engine',
+        sanitized,
+        flags=re.IGNORECASE
+    )
+    
+    # 4. Redact standalone engine keywords
+    sanitized = re.sub(r'\b(strix|zeroday)(_agent)?\b', 'security assessment engine', sanitized, flags=re.IGNORECASE)
+    
+    # 5. Collapse multiple internal path placeholders
+    sanitized = re.sub(r'(\[assessment engine internal path\]\s*)+', '[assessment engine internal path] ', sanitized)
+    
+    return sanitized.strip()
+
+def prepare_fresh_run_dir(run_id: str) -> str:
+    """
+    Guarantees a clean, isolated directory for each run execution.
+    If a run_id is retried, any existing stale artifacts are completely wiped.
+    """
+    run_dir = os.path.join(RUNS_BASE_DIR, run_id)
+    if os.path.exists(run_dir):
+        shutil.rmtree(run_dir, ignore_errors=True)
+    os.makedirs(run_dir, exist_ok=True)
+    return run_dir
 
 def get_run_dir(run_id: str) -> str:
     run_dir = os.path.join(RUNS_BASE_DIR, run_id)
@@ -397,6 +461,9 @@ def execute_assessment_run(
         if not run_obj:
             return
 
+        # Prepare a freshly cleared isolated artifact directory
+        prepare_fresh_run_dir(run_id)
+
         # STAGE 0: INITIALIZATION
         run_obj.status = "running"
         db.commit()
@@ -715,7 +782,8 @@ def execute_assessment_run(
 
     except Exception as e:
         # HONEST FAILURE STATE - NEVER silently fallback
-        error_msg = str(e)
+        raw_error = str(e)
+        sanitized_error = sanitize_engine_error_message(raw_error)
         try:
             db.rollback()
             failed_run = db.query(models.SecurityAssessmentRun).filter(
@@ -725,23 +793,23 @@ def execute_assessment_run(
             if failed_run:
                 failed_run.status = "failed"
                 failed_run.completed_at = datetime.utcnow()
-                failed_run.error_message = error_msg
-                failed_run.logs = (failed_run.logs or "") + f"[{datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}] [ASSESSMENT-FAILED] {error_msg}\n"
+                failed_run.error_message = sanitized_error
+                failed_run.logs = (failed_run.logs or "") + f"[{datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}] [ASSESSMENT-FAILED] {sanitized_error}\n"
                 db.commit()
-            append_run_log(run_id, f"[ASSESSMENT-FAILED] Critical error during execution: {error_msg}")
+            append_run_log(run_id, f"[ASSESSMENT-FAILED] Critical error during execution: {sanitized_error}")
             
             publish_assessment_event(run_id, {
                 "phase": "failed",
                 "progress": 100,
                 "status": "failed",
-                "message": f"[ASSESSMENT-FAILED] {error_msg}",
-                "error": error_msg,
+                "message": f"[ASSESSMENT-FAILED] {sanitized_error}",
+                "error": sanitized_error,
                 "node": {
                     "id": "node-error",
                     "label": "Assessment Failed",
                     "type": "error",
                     "status": "failed",
-                    "details": error_msg
+                    "details": sanitized_error
                 }
             })
         except Exception:
