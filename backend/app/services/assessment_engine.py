@@ -82,6 +82,7 @@ def sanitize_engine_error_message(raw_error: str) -> str:
     
     return sanitized.strip()
 
+# Run directory fresh cleanup helper
 def prepare_fresh_run_dir(run_id: str) -> str:
     """
     Guarantees a clean, isolated directory for each run execution.
