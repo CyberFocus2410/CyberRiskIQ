@@ -365,3 +365,147 @@ FINDINGS_SEED = [
         "confidence": 0.97
     }
 ]
+
+def seed_organization_demo_data(db, organization_id: str):
+    """
+    Populates an isolated organization with the complete FinSecure Bank demo dataset (52 assets, findings, BUs).
+    """
+    from backend.app.models import models
+    from backend.app.services.optimization_engine import CONTROLS_LIBRARY
+
+    # 1. Update or create organization details
+    org = db.query(models.Organization).filter(models.Organization.id == organization_id).first()
+    if org:
+        org.name = ORG_SEED["name"]
+        org.industry = ORG_SEED["industry"]
+        org.employees = ORG_SEED["employees"]
+        org.annual_revenue = ORG_SEED["annual_revenue"]
+        org.budget = ORG_SEED["budget"]
+        org.risk_appetite = ORG_SEED["risk_appetite"]
+        org.onboarding_completed = True
+    else:
+        org = models.Organization(
+            id=organization_id,
+            name=ORG_SEED["name"],
+            industry=ORG_SEED["industry"],
+            employees=ORG_SEED["employees"],
+            annual_revenue=ORG_SEED["annual_revenue"],
+            budget=ORG_SEED["budget"],
+            risk_appetite=ORG_SEED["risk_appetite"],
+            onboarding_completed=True
+        )
+        db.add(org)
+    db.flush()
+
+    # 2. Business Units
+    for bu_name in BUSINESS_UNITS_SEED:
+        existing_bu = db.query(models.BusinessUnit).filter(
+            models.BusinessUnit.organization_id == organization_id,
+            models.BusinessUnit.name == bu_name
+        ).first()
+        if not existing_bu:
+            bu = models.BusinessUnit(
+                organization_id=organization_id,
+                name=bu_name,
+                criticality="Critical" if "Payments" in bu_name or "Core" in bu_name else "High"
+            )
+            db.add(bu)
+    db.flush()
+
+    # 3. Controls Library
+    for ctrl in CONTROLS_LIBRARY:
+        existing_ctrl = db.query(models.Control).filter(
+            models.Control.organization_id == organization_id,
+            models.Control.id == ctrl["id"]
+        ).first()
+        if not existing_ctrl:
+            c_model = models.Control(
+                id=ctrl["id"],
+                organization_id=organization_id,
+                name=ctrl["name"],
+                type="Preventive",
+                cost=ctrl["cost"],
+                reduction=ctrl["reduction"],
+                description=ctrl.get("description", ""),
+                coverage=0.30,
+                effectiveness=0.30
+            )
+            db.add(c_model)
+    db.flush()
+
+    # 4. Assets & Business Impacts
+    assets_data = generate_assets_seed()
+    for a in assets_data:
+        existing_asset = db.query(models.Asset).filter(
+            models.Asset.organization_id == organization_id,
+            models.Asset.id == a["id"]
+        ).first()
+        if not existing_asset:
+            asset_obj = models.Asset(
+                id=a["id"],
+                organization_id=organization_id,
+                name=a["name"],
+                type=a["type"],
+                owner=a.get("owner", "Security Operations"),
+                business_unit=a.get("business_unit", "Retail Banking"),
+                business_service=a.get("business_service", "Core Operations"),
+                criticality=a.get("criticality", "Medium"),
+                data_sensitivity=a.get("data_sensitivity", "Medium"),
+                internet_exposure=a.get("internet_exposure", "No"),
+                records_exposed=a.get("records_exposed", 5000),
+                revenue_impact=1.0,
+                downtime_cost=a.get("downtime_cost_per_hour", 50000.0),
+                regulatory_exposure=a.get("regulatory_penalty", 500000.0),
+                reputation_factor=a.get("reputation_factor", 500000.0),
+                downtime_cost_per_hour=a.get("downtime_cost_per_hour", 50000.0),
+                cost_per_record=a.get("cost_per_record", 150.0),
+                regulatory_penalty=a.get("regulatory_penalty", 500000.0),
+                recovery_cost=a.get("recovery_cost", 300000.0),
+                controls=a.get("controls", {}),
+                dependencies=a.get("dependencies", []),
+                status="Active"
+            )
+            db.add(asset_obj)
+
+            impact_obj = models.AssetBusinessImpact(
+                organization_id=organization_id,
+                asset_id=a["id"],
+                downtime_cost_per_hour=a.get("downtime_cost_per_hour", 50000.0),
+                records_exposed=a.get("records_exposed", 5000),
+                cost_per_record=a.get("cost_per_record", 150.0),
+                regulatory_penalty=a.get("regulatory_penalty", 500000.0),
+                recovery_cost=a.get("recovery_cost", 300000.0),
+                reputation_factor=a.get("reputation_factor", 500000.0)
+            )
+            db.add(impact_obj)
+    db.flush()
+
+    # 5. Security Findings
+    for f in FINDINGS_SEED:
+        existing_fnd = db.query(models.Finding).filter(
+            models.Finding.organization_id == organization_id,
+            models.Finding.id == f["id"]
+        ).first()
+        if not existing_fnd:
+            fnd = models.Finding(
+                id=f["id"],
+                organization_id=organization_id,
+                asset_id=f["asset_id"],
+                source=f["source"],
+                title=f.get("title", f["vulnerability"]),
+                vulnerability=f["vulnerability"],
+                severity=f.get("severity", "Medium"),
+                cvss=f.get("cvss", 5.0),
+                exploit_available=f.get("exploit_available", False),
+                internet_exposed=f.get("internet_exposed", False),
+                evidence=f.get("evidence", ""),
+                control_state=f.get("control_state", ""),
+                remediation=f.get("remediation", ""),
+                poc_attached=f.get("poc_attached", False),
+                confidence=f.get("confidence", 0.95),
+                status="Open"
+            )
+            db.add(fnd)
+
+    db.commit()
+
