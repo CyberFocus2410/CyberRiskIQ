@@ -76,7 +76,7 @@ The MVP is locked to 10 screens, chosen to demonstrate the complete problem-to-d
 
 - Asset Inventory & Dependency Map 
 
-- Security Findings / Strix Findings 
+- Security Findings / AI Assessment Findings 
 
 - Risk Quantification 
 
@@ -100,7 +100,7 @@ Full-scale connectors (Nessus, Qualys, Tenable, Splunk, Sentinel, Defender, Crow
 
 - REST API 
 
-- Strix (AI pentesting) output 
+- AI Assessment Engine (AI pentesting) output 
 
 - A built-in demo data generator for presentation/testing 
 
@@ -114,11 +114,11 @@ Full-scale connectors (Nessus, Qualys, Tenable, Splunk, Sentinel, Defender, Crow
 
 - Predictive/forecasted risk trending beyond the scenario simulator 
 
-# 7. What Strix Is and Isn't Responsible For 
+# 7. What the AI Security Assessment Engine Is and Isn't Responsible For 
 
-Strix is an AI-driven penetration-testing tool that performs reconnaissance and produces validated findings with proof-of-concept evidence for local targets, GitHub repositories, web applications, APIs, and CI/CD pipelines. CyberRiskIQ integrates Strix as one evidence source feeding the Risk Engine — it is not the Risk Engine itself. 
+AI Assessment Engine is an AI-driven penetration-testing tool that performs reconnaissance and produces validated findings with proof-of-concept evidence for local targets, GitHub repositories, web applications, APIs, and CI/CD pipelines. CyberRiskIQ integrates AI Assessment Engine as one evidence source feeding the Risk Engine — it is not the Risk Engine itself. 
 
-#### 7.1 Strix's role 
+#### 7.1 Assessment Engine's role 
 
 - Target reconnaissance and AI-driven pentesting 
 
@@ -126,7 +126,7 @@ Strix is an AI-driven penetration-testing tool that performs reconnaissance and 
 
 - Feeding CyberRiskIQ's ingestion API as an evidence source 
 
-#### 7.2 Explicitly not Strix's role 
+#### 7.2 Explicitly not Assessment Engine's role 
 
 - Enterprise financial loss calculation 
 
@@ -146,7 +146,7 @@ These remain CyberRiskIQ's own intellectual property: "Our platform doesn't blin
 |---|---|---|
 |1|Organization Setup|Capture org profile, revenue, budget, risk appetite|
 |2|Asset Discovery & Inventory|Build a centralized, dependency-aware asset register|
-|3|Security Data Ingestion|Accept findings from Strix, scanners, SIEM, IAM, cloud,<br>threat intel|
+|3|Security Data Ingestion|Accept findings from AI Assessment Engine, scanners, SIEM, IAM, cloud,<br>threat intel|
 |4|Data Normalization|Map all sources into one common finding schema|
 |5|Threat & Vulnerability Correlation|Combine CVSS with exploitability, exposure, and existing<br>controls|
 |6|Asset Criticality & Business Impact<br>Modeling|Quantify downtime, data, regulatory, recovery, and reputation<br>impact|
@@ -210,7 +210,7 @@ Executive, Technical, and Compliance report templates are generated from the sam
 |**Metric**|**Target for MVP Demo**|
 |---|---|
 |End-to-end traceability|Every displayed EAL figure must be traceable to source finding(s) in ≤3<br>clicks|
-|Ingestion breadth|Successfully normalize findings from at least 2 formats (CSV/JSON) +<br>Strix output|
+|Ingestion breadth|Successfully normalize findings from at least 2 formats (CSV/JSON) +<br>AI Assessment Engine output|
 |Optimizer correctness|Optimizer output must not exceed the entered budget and must be<br>reproducible|
 |Scenario responsiveness|Simulated EAL recalculation returns in-session, without manual reload|
 |Framework coverage|At least 2 frameworks (e.g., NIST CSF, ISO 27001) mapped end-to-end<br>for demo assets|
@@ -224,7 +224,7 @@ Executive, Technical, and Compliance report templates are generated from the sam
 
 - Control effectiveness percentages are evidence-based estimates (configuration, telemetry, incident history, compliance status) rather than guaranteed measured values. 
 
-- MVP ingestion assumes semi-structured input (CSV/JSON/API/Strix) rather than raw tool-native connectors. 
+- MVP ingestion assumes semi-structured input (CSV/JSON/API/AI Assessment Engine) rather than raw tool-native connectors. 
 
 - Currency is INR (₹) for the MVP; multi-currency support is a future consideration. 
 
@@ -262,7 +262,7 @@ This chain is the product. Every feature in this PRD exists to make one or more 
 
 |**Phase**|**Scope**|
 |---|---|
-|MVP (Hackathon)|10 screens listed in Section 6.1; CSV/JSON/API/Strix ingestion; demo data<br>generator; 2-framework compliance mapping|
+|MVP (Hackathon)|10 screens listed in Section 6.1; CSV/JSON/API/AI Assessment Engine ingestion; demo data<br>generator; 2-framework compliance mapping|
 |Phase 2|Native SIEM/EDR/IAM/CSPM connectors; multi-year investment planning;<br>expanded framework library|
 |Phase 3|Multi-tenant/MSSP mode; automated compliance evidence collection; predictive<br>risk trending|
 
