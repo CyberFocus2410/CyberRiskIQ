@@ -406,7 +406,8 @@ def generate_quantitative_report(
             "baseline_annual_loss_exposure": round(total_eal, 2),
             "max_single_loss_exposure": round(total_potential_loss, 2),
             "budget_available": budget,
-            "overall_health": "Urgent Remediation Required" if any(f["severity"] == "Critical" for f in normalized_findings) else "Cautionary Exposure"
+            "overall_health": "Urgent Remediation Required" if any(f["severity"] == "Critical" for f in normalized_findings) else "Cautionary Exposure",
+            "prioritized_recommendations": recommendations
         },
         "prioritized_recommendations": recommendations
     }
@@ -432,5 +433,6 @@ def generate_quantitative_report(
         ],
         "findings": normalized_findings,
         "summary": stage_6_rollup["summary"],
-        "recommendations": recommendations
+        "recommendations": recommendations,
+        "prioritized_recommendations": recommendations
     }
