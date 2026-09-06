@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRisk } from '../context/RiskContext';
 import Modal from './Modal';
+import { generateSecurityAssessmentPdf } from '../services/reportGenerator';
 import { 
   ShieldAlert, 
   Terminal, 
@@ -263,19 +264,12 @@ export default function SecurityAssessmentControl() {
       const resp = await fetch(`/api/assessment/report/${runId}`);
       if (resp.ok) {
         const data = await resp.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `CyberRiskIQ-Quantitative-Assessment-${runId}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        generateSecurityAssessmentPdf(data, runId);
       } else {
         window.open(`/api/assessment/report/${runId}`, '_blank');
       }
-    } catch (_) {
+    } catch (e) {
+      console.error('Failed to generate PDF report:', e);
       window.open(`/api/assessment/report/${runId}`, '_blank');
     }
   };
