@@ -29,7 +29,7 @@ This Functional Requirements Document (FRD) specifies the exact functional behav
 |FR-15 Investment vs Risk Reduction Curve|Step 13 (visualization)|
 |FR-16 Compliance & Framework Mapping|Step 14|
 |FR-17 Reporting Engine|Step 15|
-|FR-18 Strix Integration Connector|Cross-cutting (Step 3 / evidence source)|
+|FR-18 AI Security Assessment Integration Connector|Cross-cutting (Step 3 / evidence source)|
 
 
 
@@ -117,7 +117,7 @@ _Accepts security telemetry from multiple sources and stages it for normalizatio
 
 #### Inputs 
 
-- MVP: CSV upload, JSON upload, REST API push, Strix output (see FR-18), built-in Demo Data Generator. 
+- MVP: CSV upload, JSON upload, REST API push, AI Assessment Engine output (see FR-18), built-in Demo Data Generator. 
 
 - Future (out of MVP scope): Nessus, Qualys, Tenable, Splunk, Microsoft Sentinel, Elastic, Microsoft Defender, CrowdStrike, Azure AD/Entra, Okta, AWS/Azure/GCP, CVE feeds, CISA KEV. 
 
@@ -539,37 +539,37 @@ _Generates role-specific, exportable reports from the shared underlying data mod
 
 - Every figure in a generated report must match the live dashboard figure for the same scope at generation time. 
 
-### FR-18 Strix Integration Connector 
+### FR-18 AI Security Assessment Integration Connector 
 
-_Ingests validated, evidence-backed findings from Strix AI pentesting as a specific, higher-trust evidence source._ 
+_Ingests validated, evidence-backed findings from AI Assessment Engine AI pentesting as a specific, higher-trust evidence source._ 
 
 #### Inputs 
 
-- Strix output for a target: local target, GitHub repository, web application, API, multiple targets, or CI/CD pipeline run. 
+- AI Assessment Engine output for a target: local target, GitHub repository, web application, API, multiple targets, or CI/CD pipeline run. 
 
 #### Functional Behavior 
 
-- Flow: Target Application → Strix (Reconnaissance → AI Pentesting → Validated Finding → PoC/Evidence) → CyberRiskIQ Ingestion API (FR-3) → Risk Engine (FR-4 onward). 
+- Flow: Target Application → AI Assessment Engine (Reconnaissance → AI Pentesting → Validated Finding → PoC/Evidence) → CyberRiskIQ Ingestion API (FR-3) → Risk Engine (FR-4 onward). 
 
-- Findings sourced from Strix are tagged with an 'AI-Validated / PoC Evidence Attached' badge and are NOT rescored by raw scanner severity alone — the PoC evidence is factored into the Correlated Risk Indicator (FR-5) as a higher-confidence signal. 
+- Findings sourced from AI Assessment Engine are tagged with an 'AI-Validated / PoC Evidence Attached' badge and are NOT rescored by raw scanner severity alone — the PoC evidence is factored into the Correlated Risk Indicator (FR-5) as a higher-confidence signal. 
 
-- Strix is explicitly excluded from performing: enterprise financial loss calculation, EAL/VaR, investment optimization, asset criticality, board dashboards, budget allocation, compliance scoring, ROSI, and enterprise risk aggregation — these remain CyberRiskIQ's own computation (see PRD Section 7). 
+- AI Assessment Engine is explicitly excluded from performing: enterprise financial loss calculation, EAL/VaR, investment optimization, asset criticality, board dashboards, budget allocation, compliance scoring, ROSI, and enterprise risk aggregation — these remain CyberRiskIQ's own computation (see PRD Section 7). 
 
 #### Outputs / UI Elements 
 
-- Strix-sourced findings visible in the Findings screen with source badge and linked PoC evidence. 
+- AI Assessment Engine-sourced findings visible in the Findings screen with source badge and linked PoC evidence. 
 
-- Ingestion Batch log entry per Strix run (FR-3). 
+- Ingestion Batch log entry per AI Assessment Engine run (FR-3). 
 
 #### Business Rules / Validation 
 
-- A Strix finding without attached PoC evidence is treated as an unvalidated finding and follows the standard (non-boosted) correlation path. 
+- A AI Assessment Engine finding without attached PoC evidence is treated as an unvalidated finding and follows the standard (non-boosted) correlation path. 
 
 # 4. End-to-End User Journey (Master Flow) 
 
 This is the master flow every module above must support without a break in the chain: 
 
-LOGIN → CREATE ORGANIZATION → DEFINE BUSINESS UNITS → IMPORT/DISCOVER ASSETS → ASSIGN ASSET CRITICALITY → CONNECT SECURITY SOURCES → INGEST SECURITY TELEMETRY → RUN STRIX SECURITY ASSESSMENT → NORMALIZE FINDINGS → CORRELATE THREATS + VULNERABILITIES + ASSETS → EVALUATE CONTROL EFFECTIVENESS → CALCULATE INCIDENT LIKELIHOOD → CALCULATE BUSINESS IMPACT → CALCULATE EXPECTED ANNUAL LOSS → AGGREGATE ENTERPRISE 
+LOGIN → CREATE ORGANIZATION → DEFINE BUSINESS UNITS → IMPORT/DISCOVER ASSETS → ASSIGN ASSET CRITICALITY → CONNECT SECURITY SOURCES → INGEST SECURITY TELEMETRY → RUN AI SECURITY ASSESSMENT → NORMALIZE FINDINGS → CORRELATE THREATS + VULNERABILITIES + ASSETS → EVALUATE CONTROL EFFECTIVENESS → CALCULATE INCIDENT LIKELIHOOD → CALCULATE BUSINESS IMPACT → CALCULATE EXPECTED ANNUAL LOSS → AGGREGATE ENTERPRISE 
 
 RISK → IDENTIFY TOP RISK DRIVERS → AI ANALYST EXPLAINS RISKS → AI GENERATES MITIGATION OPTIONS → USER OPENS SCENARIO SIMULATOR → TESTS "WHAT IF?" CONDITIONS → USER ENTERS CYBERSECURITY BUDGET → INVESTMENT OPTIMIZER SELECTS BEST CONTROLS → CALCULATE ROSI → SHOW RISK VS INVESTMENT CURVE → MAP CONTROLS TO FRAMEWORKS → GENERATE EXECUTIVE / TECHNICAL / COMPLIANCE REPORT 
 
@@ -580,7 +580,7 @@ RISK → IDENTIFY TOP RISK DRIVERS → AI ANALYST EXPLAINS RISKS → AI GENERATE
 |Login / Organization Setup|FR-1|
 |Executive Risk Dashboard|FR-10, FR-11, FR-15|
 |Asset Inventory & Dependency Map|FR-2|
-|Security Findings / Strix Findings|FR-3, FR-4, FR-5, FR-18|
+|Security Findings / AI Assessment Findings|FR-3, FR-4, FR-5, FR-18|
 |Risk Quantification|FR-6, FR-7, FR-8|
 |Financial Risk Analysis|FR-9, FR-10|
 |AI Cyber Risk Analyst|FR-11|
@@ -599,7 +599,7 @@ RISK → IDENTIFY TOP RISK DRIVERS → AI ANALYST EXPLAINS RISKS → AI GENERATE
 |Data Integrity|Scenario simulation (FR-13) must never mutate production data unless explicitly<br>applied.|
 |Extensibility|Ingestion layer (FR-3/FR-4) must accept new source types via schema mapping<br>configuration, not code changes, to support Phase 2 connectors.|
 |Usability|Each of the 5 personas (PRD Section 5) must find their priority data within 2<br>clicks of login.|
-|Security|Ingested findings and PoC evidence (esp. from Strix) are sensitive security data<br>and must be access-controlled by role and business unit.|
+|Security|Ingested findings and PoC evidence (esp. from AI Assessment Engine) are sensitive security data<br>and must be access-controlled by role and business unit.|
 
 
 
@@ -611,7 +611,7 @@ RISK → IDENTIFY TOP RISK DRIVERS → AI ANALYST EXPLAINS RISKS → AI GENERATE
 
 - Entering a budget in the Investment Optimizer returns a control portfolio whose total cost does not exceed the entered budget, with a computed ROSI. 
 
-- At least one Strix-sourced finding is visible in the Findings screen with its PoC evidence badge and reflected in the Correlated Risk Indicator. 
+- At least one AI Assessment Engine-sourced finding is visible in the Findings screen with its PoC evidence badge and reflected in the Correlated Risk Indicator. 
 
 - At least 2 compliance frameworks show coverage % derived from live control-effectiveness data, not static text. 
 
@@ -625,7 +625,7 @@ RISK → IDENTIFY TOP RISK DRIVERS → AI ANALYST EXPLAINS RISKS → AI GENERATE
 |ROSI|Return on Security Investment — (EAL Reduction − Investment Cost) /<br>Investment Cost × 100%|
 |Risk Score|Normalized 0–100 score = f(Threat Likelihood, Business Impact, Exposure,<br>Asset Criticality, Control Gap)|
 |Correlated Risk Indicator|Finding-level risk rank combining CVSS with exploitability, exposure, criticality,<br>and control state|
-|PoC|Proof of Concept — validated exploitation evidence attached to a Strix finding|
+|PoC|Proof of Concept — validated exploitation evidence attached to a AI Assessment Engine finding|
 
 
 
