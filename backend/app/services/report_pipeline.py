@@ -10,8 +10,92 @@ Stages:
 5. FAIR Financial EAL Loss Quantification (Downtime, Breach, Regulatory, Recovery, Reputation)
 6. Enterprise Roll-Up & Strategic Recommendations (EAL delta, ROSI, Prioritized Roadmap)
 """
+import logging
+import re
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+
+logger = logging.getLogger(__name__)
+
+# OWASP Top 10 category mapping by CWE/Vulnerability keywords
+OWASP_MAPPINGS = {
+    "A01:2021-Broken Access Control": ["CWE-284", "CWE-285", "CWE-639", "BOLA", "IDOR", "Access Control", "Privilege Escalation", "Authorization"],
+    "A02:2021-Cryptographic Failures": ["CWE-326", "CWE-327", "CWE-798", "TLS", "Cipher", "Hardcoded", "Secret", "Key", "Token", "Encryption"],
+    "A03:2021-Injection": ["CWE-89", "CWE-78", "CWE-79", "SQL", "Command Injection", "XSS", "Injection", "Prototype Pollution", "CWE-1321"],
+    "A04:2021-Insecure Design": ["CWE-209", "CWE-311", "Design", "Architecture", "Business Logic"],
+    "A05:2021-Security Misconfiguration": ["CWE-16", "CWE-200", "Misconfiguration", "Default", "Exposure", "CORS", "Headers", "Directory Listing"],
+    "A06:2021-Vulnerable and Outdated Components": ["CWE-1104", "CWE-937", "Outdated", "Dependency", "Vulnerable Component", "CVE-"],
+    "A07:2021-Identification and Authentication Failures": ["CWE-287", "CWE-306", "Authentication", "Session", "MFA", "Password", "Credential"],
+    "A08:2021-Software and Data Integrity Failures": ["CWE-494", "CWE-829", "Integrity", "CI/CD", "Pipeline", "Unverified Code"],
+    "A09:2021-Security Logging and Monitoring Failures": ["CWE-778", "CWE-223", "Logging", "Monitoring", "Audit", "Alerting"],
+    "A10:2021-Server-Side Request Forgery (SSRF)": ["CWE-918", "SSRF", "Request Forgery"]
+}
+
+def map_owasp_category(vulnerability: str, cwe_id: Optional[str] = None) -> str:
+    """Classifies a vulnerability into OWASP Top 10 categories."""
+    target_str = f"{vulnerability} {cwe_id or ''}".lower()
+    for cat, keywords in OWASP_MAPPINGS.items():
+        for kw in keywords:
+            if kw.lower() in target_str:
+                return cat
+    return "A05:2021-Security Misconfiguration"
+
+def resolve_asset_internet_exposure(
+    asset_id: str,
+    assets_context: Optional[List[Dict[str, Any]]] = None,
+    org_id: Optional[str] = None
+) -> bool:
+    """
+    Pulls internet exposure directly from the asset inventory table.
+    Guarantees internal assets are NEVER marked as internet-exposed.
+    """
+    if assets_context:
+        for a in assets_context:
+            if str(a.get("id")) == str(asset_id):
+                exposure_val = a.get("internet_exposure") or a.get("internetExposure")
+                return exposure_val == "Yes" or exposure_val is True
+
+    # Surface broken asset join in testing/telemetry
+    logger.warning(
+        f"[EXPOSURE-MAPPING-WARNING] Asset ID '{asset_id}' could not be resolved in asset inventory "
+        f"(org_id='{org_id}'). Defaulting internet_exposed to False to prevent false positives."
+    )
+    return False
+
+def calculate_cvss_exploitability_subscore(cvss_vector: Optional[str], default_score: float = 1.0) -> float:
+    """
+    Parses CVSS v3.1 vector string into exact Exploitability subscore (0.0 to 3.89).
+    Formula: 8.22 * AV * AC * PR * UI
+    """
+    if not cvss_vector or not isinstance(cvss_vector, str) or "AV:" not in cvss_vector:
+        return default_score
+
+    av_map = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.20}
+    ac_map = {"L": 0.77, "H": 0.44}
+    pr_map_unchanged = {"N": 0.85, "L": 0.62, "H": 0.27}
+    pr_map_changed = {"N": 0.85, "L": 0.68, "H": 0.50}
+    ui_map = {"N": 0.85, "R": 0.62}
+
+    components = {}
+    for part in cvss_vector.split("/"):
+        if ":" in part:
+            k, v = part.split(":", 1)
+            components[k.strip().upper()] = v.strip().upper()
+
+    scope = components.get("S", "U")
+    av = av_map.get(components.get("AV", "N"), 0.85)
+    ac = ac_map.get(components.get("AC", "L"), 0.77)
+    pr = pr_map_changed.get(components.get("PR", "N"), 0.85) if scope == "C" else pr_map_unchanged.get(components.get("PR", "N"), 0.85)
+    ui = ui_map.get(components.get("UI", "N"), 0.85)
+
+    subscore = 8.22 * av * ac * pr * ui
+    return round(subscore, 2)
+
+# Note: The 2.8 cutoff threshold below is CyberRiskIQ's internal configurable calibration assumption
+# for binary 'Exploit Available' classification in threat correlation, not part of the official
+# FIRST CVSS v3.1 standard itself.
+def is_exploit_available(subscore: float, has_poc: bool = False, has_known_cve_exploit: bool = False) -> bool:
+    return subscore >= 2.8 or has_poc or has_known_cve_exploit
 
 def generate_quantitative_report(
     run_id: str,
@@ -28,6 +112,7 @@ def generate_quantitative_report(
     """
     generated_at = datetime.utcnow().isoformat() + "Z"
     org_name = org_metadata.get("name", "FinSecure Enterprise") if org_metadata else "FinSecure Enterprise"
+    org_id = org_metadata.get("id", "org-demo-finsecure") if org_metadata else "org-demo-finsecure"
     annual_revenue = org_metadata.get("annual_revenue", 500000000.0) if org_metadata else 500000000.0
     budget = org_metadata.get("budget", 3500000.0) if org_metadata else 3500000.0
 
@@ -54,24 +139,49 @@ def generate_quantitative_report(
         f_id = rf.get("id") or f"FND-SCAN-{run_id[-4:].upper()}-{idx+1:02d}"
         asset_id = rf.get("asset_id") or rf.get("assetId") or "AST-001"
         severity = str(rf.get("severity", "Medium")).capitalize()
-        cvss = float(rf.get("cvss", 5.0))
-        exploit_available = bool(rf.get("exploit_available", False) or rf.get("exploitAvailable", False) or rf.get("exploit_available") == "Yes")
-        internet_exposed = bool(rf.get("internet_exposed", False) or rf.get("internetExposed", False) or rf.get("internet_exposed") == "Yes")
+        cvss = float(rf.get("cvss", rf.get("cvss_score", 5.0)))
+        cvss_vector = rf.get("cvss_vector") or "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
         
+        # Calculate Exploitability subscore and exploit_available flag
+        exploitability_subscore = calculate_cvss_exploitability_subscore(cvss_vector, default_score=round(cvss * 0.25, 2))
+        has_poc = bool(rf.get("poc_attached", True) or rf.get("poc_script_code") or rf.get("poc_description"))
+        exploit_available = rf.get("exploit_available")
+        if exploit_available is None:
+            exploit_available = is_exploit_available(exploitability_subscore, has_poc=has_poc)
+        else:
+            exploit_available = bool(exploit_available is True or exploit_available == "Yes")
+        
+        # Pull internet exposure strictly from asset inventory
+        internet_exposed = resolve_asset_internet_exposure(asset_id, assets_context, org_id=org_id)
+        
+        cwe_id = rf.get("cwe_id") or rf.get("cwe") or "CWE-200"
+        cve_id = rf.get("cve_id") or rf.get("cve") or "CVE-2026-NVD-PENDING"
+        vulnerability_name = rf.get("vulnerability") or rf.get("title") or "Discovered Security Weakness"
+        owasp_category = map_owasp_category(vulnerability_name, cwe_id)
+
         normalized = {
             "id": f_id,
             "asset_id": asset_id,
-            "vulnerability": rf.get("vulnerability") or rf.get("title") or "Discovered Security Weakness",
+            "title": rf.get("title") or vulnerability_name,
+            "vulnerability": vulnerability_name,
             "severity": severity,
             "cvss": round(cvss, 1),
+            "cvss_vector": cvss_vector,
+            "exploitability": exploitability_subscore,
             "exploit_available": exploit_available,
             "internet_exposed": internet_exposed,
+            "owasp_category": owasp_category,
+            "endpoint": rf.get("endpoint"),
+            "method": rf.get("method", "GET"),
             "evidence": rf.get("evidence") or rf.get("description") or "Automated engine probe verification.",
             "control_state": rf.get("control_state") or rf.get("controlState") or "Suboptimal Control Configuration",
-            "remediation": rf.get("remediation") or "Apply security patches and enforce least-privilege controls.",
-            "poc_attached": bool(rf.get("poc_attached", True)),
-            "cve_id": rf.get("cve_id", "CVE-2026-NVD-PENDING"),
-            "cwe_id": rf.get("cwe_id", "CWE-200")
+            "remediation": rf.get("remediation") or rf.get("remediation_steps") or "Apply security patches and enforce least-privilege controls.",
+            "poc_attached": has_poc,
+            "poc_description": rf.get("poc_description"),
+            "poc_script_code": rf.get("poc_script_code"),
+            "confidence": float(rf.get("confidence", 0.95)),
+            "cve_id": cve_id,
+            "cwe_id": cwe_id
         }
         normalized_findings.append(normalized)
 
