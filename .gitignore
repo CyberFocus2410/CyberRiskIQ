@@ -29,6 +29,8 @@ strix_runs/
 strix/
 
 # Python & SQLite
+.venv/
+.venv*/
 __pycache__/
 *.py[cod]
 *$py.class
