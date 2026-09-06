@@ -28,8 +28,8 @@ class TestCyberRiskIQAPI(unittest.TestCase):
     def test_database_persistence_and_seed(self):
         db = SessionLocal()
         try:
-            self.assertEqual(db.query(models.Asset).count(), 52)
-            self.assertGreaterEqual(db.query(models.Finding).count(), 6)
+            self.assertEqual(db.query(models.Asset).filter(models.Asset.organization_id == "org-demo-finsecure").count(), 52)
+            self.assertGreaterEqual(db.query(models.Finding).filter(models.Finding.organization_id == "org-demo-finsecure").count(), 6)
         finally:
             db.close()
 
