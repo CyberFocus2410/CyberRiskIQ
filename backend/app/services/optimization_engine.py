@@ -3,11 +3,26 @@
 CyberRiskIQ Security Investment Optimizer
 Dynamic Programming 0/1 Knapsack Solver for budget-constrained security investment.
 Calculates maximum EAL reduction, residual risk, and ROSI.
+
+MATHEMATICAL FORMULATION & BENCHMARKS:
+1. Optimization Objective:
+   - Maximize sum(x_i * Delta_EAL_i)
+   - Subject to: sum(x_i * Cost_i) <= Budget, where x_i in {0, 1}
+2. Return on Security Investment (ROSI):
+   - ROSI = [(Total EAL Reduction - Total Implementation Cost) / Total Implementation Cost] * 100
+   - Standard: SANS / ENISA Return on Security Investment methodology.
+3. Invariant Bound:
+   - Total Portfolio Cost MUST NEVER exceed Budget: total_cost <= budget.
+   - If Budget < min(Cost_i), portfolio = [], total_cost = 0 <= Budget.
 """
 from typing import List, Dict, Any, Optional
 import copy
 from backend.app.services.risk_engine import calculate_asset_risk_score
-from backend.app.services.financial_engine import calculate_asset_eal
+from backend.app.services.financial_engine import (
+    calculate_asset_eal,
+    DEFAULT_ORG_REVENUE_BASELINE,
+    DEFAULT_ORG_EMPLOYEES_BASELINE
+)
 
 CONTROLS_LIBRARY = [
     {
@@ -65,8 +80,8 @@ def calculate_control_benefit(
     assets: List[Dict[str, Any]],
     findings: List[Dict[str, Any]],
     baseline_eal: float,
-    org_revenue: float = 500000000.0,
-    org_employees: int = 1200,
+    org_revenue: float = DEFAULT_ORG_REVENUE_BASELINE,
+    org_employees: int = DEFAULT_ORG_EMPLOYEES_BASELINE,
     risk_appetite: str = "Medium"
 ) -> float:
     """
@@ -89,16 +104,18 @@ def solve_investment_optimization(
     budget: float,
     assets: List[Dict[str, Any]],
     findings: List[Dict[str, Any]],
-    org_revenue: float = 500000000.0,
-    org_employees: int = 1200,
+    org_revenue: float = DEFAULT_ORG_REVENUE_BASELINE,
+    org_employees: int = DEFAULT_ORG_EMPLOYEES_BASELINE,
     risk_appetite: str = "Medium",
     locked_in: Optional[List[str]] = None,
     locked_out: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     0/1 Knapsack Dynamic Programming optimization.
+    Guarantees selected portfolio cost <= budget.
     Returns optimal control portfolio, remaining budget, EAL reduction, residual EAL, and ROSI.
     """
+    safe_budget = max(0.0, float(budget))
     locked_in_ids = locked_in or []
     locked_out_ids = locked_out or []
 
@@ -124,8 +141,21 @@ def solve_investment_optimization(
     forced_in_items = [c for c in evaluated_options if c["id"] in locked_in_ids]
     forced_cost = sum(c["cost"] for c in forced_in_items)
 
-    remaining_budget = max(0.0, budget - forced_cost)
-    selectable_items = [c for c in evaluated_options if c["id"] not in locked_in_ids]
+    # Invariant: If forced items exceed budget, clamp to affordable subset
+    if forced_cost > safe_budget:
+        # Sort by ROI and keep only what fits within safe_budget
+        forced_in_items.sort(key=lambda x: x["eal_reduction"] / x["cost"] if x["cost"] > 0 else 0, reverse=True)
+        admitted = []
+        cur_c = 0.0
+        for item in forced_in_items:
+            if cur_c + item["cost"] <= safe_budget:
+                admitted.append(item)
+                cur_c += item["cost"]
+        forced_in_items = admitted
+        forced_cost = sum(c["cost"] for c in forced_in_items)
+
+    remaining_budget = max(0.0, safe_budget - forced_cost)
+    selectable_items = [c for c in evaluated_options if c["id"] not in [f["id"] for f in forced_in_items]]
 
     selected_from_dp = []
     if remaining_budget > 0 and selectable_items:
@@ -158,6 +188,20 @@ def solve_investment_optimization(
     # Combine forced and DP selected
     final_portfolio = forced_in_items + selected_from_dp
     total_cost = sum(c["cost"] for c in final_portfolio)
+
+    # Invariant safety assertion: total_cost <= safe_budget
+    if total_cost > safe_budget:
+        # Final safety filter if any discretization rounding occurred
+        final_portfolio.sort(key=lambda x: x["eal_reduction"] / x["cost"] if x["cost"] > 0 else 0, reverse=True)
+        pruned = []
+        acc_cost = 0.0
+        for c in final_portfolio:
+            if acc_cost + c["cost"] <= safe_budget:
+                pruned.append(c)
+                acc_cost += c["cost"]
+        final_portfolio = pruned
+        total_cost = sum(c["cost"] for c in final_portfolio)
+
     total_reduction = sum(c["eal_reduction"] for c in final_portfolio)
     residual_eal = max(0.0, baseline_eal - total_reduction)
 
@@ -165,13 +209,14 @@ def solve_investment_optimization(
     rosi = int(round(((total_reduction - total_cost) / total_cost) * 100.0)) if total_cost > 0 else 0
 
     return {
-        "budget": budget,
+        "budget": safe_budget,
         "selected_portfolio": final_portfolio,
         "total_cost": total_cost,
-        "budget_remaining": max(0.0, budget - total_cost),
+        "budget_remaining": max(0.0, safe_budget - total_cost),
         "baseline_eal": baseline_eal,
         "total_reduction": total_reduction,
         "residual_eal": residual_eal,
         "rosi": rosi,
         "formula": f"ROSI = (₹{total_reduction:,.0f} - ₹{total_cost:,.0f}) / ₹{total_cost:,.0f} × 100 = {rosi}%"
     }
+
