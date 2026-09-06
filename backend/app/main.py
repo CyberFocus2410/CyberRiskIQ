@@ -103,23 +103,27 @@ def get_current_tenant(
     org = db.query(models.Organization).filter(models.Organization.id == org_id).first()
     if not org:
         # Auto-provision organization record
-        org = models.Organization(
-            id=org_id,
-            name="FinSecure Bank" if org_id == DEFAULT_DEMO_ORG_ID else "My Organization",
-            industry="Banking & Financial Services",
-            employees=1200,
-            annual_revenue=500000000.0,
-            budget=3500000.0,
-            risk_appetite="Medium",
-            onboarding_completed=(org_id == DEFAULT_DEMO_ORG_ID)
-        )
-        db.add(org)
-        db.commit()
-        db.refresh(org)
+        try:
+            org = models.Organization(
+                id=org_id,
+                name="FinSecure Bank" if org_id == DEFAULT_DEMO_ORG_ID else "My Organization",
+                industry="Banking & Financial Services",
+                employees=1200,
+                annual_revenue=500000000.0,
+                budget=3500000.0,
+                risk_appetite="Medium",
+                onboarding_completed=(org_id == DEFAULT_DEMO_ORG_ID)
+            )
+            db.add(org)
+            db.commit()
+            db.refresh(org)
 
-        # If it's the demo organization, seed it automatically
-        if org_id == DEFAULT_DEMO_ORG_ID:
-            seed_organization_demo_data(db, org_id)
+            # If it's the demo organization, seed it automatically
+            if org_id == DEFAULT_DEMO_ORG_ID:
+                seed_organization_demo_data(db, org_id)
+        except Exception:
+            db.rollback()
+            org = db.query(models.Organization).filter(models.Organization.id == org_id).first()
 
     return org
 
