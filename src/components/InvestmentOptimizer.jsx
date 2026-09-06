@@ -376,11 +376,15 @@ export default function InvestmentOptimizer() {
           </div>
 
           {/* Investment vs Risk Reduction Curve Card */}
-          <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 transition-theme">
+          <div className="bg-white dark:bg-[#0D1117] border border-zinc-200/80 dark:border-[#1E2638] rounded-xl shadow-sm p-6 transition-theme">
             <div className="h-72 w-full">
-              <ReactECharts option={chartOptions} style={{ height: '100%', width: '100%' }} />
+              <ReactECharts 
+                option={chartOptions} 
+                theme={darkMode ? 'cyberriskiq-dark' : 'cyberriskiq-light'}
+                style={{ height: '100%', width: '100%' }} 
+              />
             </div>
-            <p className="text-[10px] text-zinc-400 mt-2 leading-relaxed">
+            <p className="text-[10px] text-zinc-400 mt-2 leading-relaxed font-mono">
               This curve represents the knapsack frontier across varying budget allocations, illustrating the point of diminishing returns.
             </p>
           </div>

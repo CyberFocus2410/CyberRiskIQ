@@ -177,27 +177,35 @@ export default function FinancialAnalysis() {
 
       {/* Grid of charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme h-[340px]">
-          <ReactECharts option={buOption} style={{ height: '100%', width: '100%' }} />
+        <div className="bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme h-[340px]">
+          <ReactECharts 
+            option={buOption} 
+            theme={darkMode ? 'cyberriskiq-dark' : 'cyberriskiq-light'}
+            style={{ height: '100%', width: '100%' }} 
+          />
         </div>
-        <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme h-[340px]">
-          <ReactECharts option={catOption} style={{ height: '100%', width: '100%' }} />
+        <div className="bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme h-[340px]">
+          <ReactECharts 
+            option={catOption} 
+            theme={darkMode ? 'cyberriskiq-dark' : 'cyberriskiq-light'}
+            style={{ height: '100%', width: '100%' }} 
+          />
         </div>
       </div>
 
       {/* Detail EAL Worksheet table */}
-      <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden transition-theme">
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+      <div className="bg-white dark:bg-[#0D1117] border border-zinc-200/80 dark:border-[#1E2638] rounded-xl shadow-sm overflow-hidden transition-theme">
+        <div className="p-4 bg-zinc-50 dark:bg-[#121620] border-b border-zinc-200 dark:border-[#1C2333] flex justify-between items-center">
           <div>
-            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-              <Landmark className="w-4 h-4 text-blue-500" /> Expected Annual Loss (EAL) Ledger
+            <h3 className="text-sm font-bold font-display text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-cyan-500" /> Expected Annual Loss (EAL) Ledger
             </h3>
-            <span className="text-[10px] text-zinc-400">Click any asset row to view full deterministic drill-down breakdown</span>
+            <span className="text-[10px] text-zinc-400 font-mono">Click any asset row to view full deterministic drill-down breakdown</span>
           </div>
         </div>
         <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-10">
+            <thead className="sticky top-0 bg-zinc-50 dark:bg-[#121620] border-b border-zinc-200 dark:border-[#1C2333] z-10">
               <tr className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
                 <th className="p-4">Asset</th>
                 <th className="p-4">Risk Score</th>
@@ -229,7 +237,9 @@ export default function FinancialAnalysis() {
                     </td>
                     <td className="p-4 font-mono text-xs font-bold">{risk}/100</td>
                     <td className="p-4 text-center font-mono text-xs">{(probability * 100).toFixed(1)}%</td>
-                    <td className="p-4 text-right font-mono text-xs">{formatCurrency(impact)}</td>
+                    <td className="p-4 text-right font-mono text-xs">
+                      {formatCurrency(typeof impact === 'number' ? impact : (impact?.total_potential_loss || impact?.totalPotentialLoss || 0))}
+                    </td>
                     <td className="p-4 text-right font-mono text-xs font-bold text-rose-600 dark:text-rose-400">
                       {formatCurrency(eal)}
                     </td>

@@ -54,19 +54,19 @@ export default function FinancialDrilldownModal({ isOpen, onClose, asset, org, e
     >
       <div className="space-y-6 text-zinc-900 dark:text-zinc-100">
         {/* Header Summary Card */}
-        <div className="bg-gradient-to-r from-blue-900/10 via-indigo-900/10 to-purple-900/10 border border-blue-200 dark:border-blue-900/40 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="bg-gradient-to-r from-cyan-950/30 via-slate-900/50 to-blue-950/30 border border-cyan-500/30 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 uppercase font-bold tracking-wider block">
+            <span className="font-mono text-[10px] text-cyan-400 uppercase font-bold tracking-widest block">
               Asset Target: {asset.id} • {asset.businessUnit}
             </span>
-            <h2 className="text-xl font-black text-zinc-950 dark:text-zinc-50">{asset.name}</h2>
+            <h2 className="text-xl font-display font-black text-zinc-950 dark:text-zinc-50">{asset.name}</h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{asset.businessService}</p>
           </div>
 
           <div className="flex items-baseline gap-4">
             <div className="text-right">
-              <span className="text-[10px] text-zinc-400 uppercase font-bold block">Expected Annual Loss (EAL)</span>
-              <span className="text-2xl font-black font-mono text-rose-600 dark:text-rose-400">
+              <span className="text-[10px] text-zinc-400 font-mono uppercase font-bold tracking-wider block">Expected Annual Loss (EAL)</span>
+              <span className="text-2xl font-black font-mono text-rose-500 dark:text-rose-400">
                 {formatCurrency(eal)}
               </span>
             </div>
@@ -74,69 +74,69 @@ export default function FinancialDrilldownModal({ isOpen, onClose, asset, org, e
         </div>
 
         {/* Calculation Formula Banner */}
-        <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+        <div className="bg-zinc-50 dark:bg-[#121824] border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4">
+          <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block mb-1">
             Deterministic Formula Breakdown
           </span>
           <div className="flex flex-wrap items-center gap-2 font-mono text-xs md:text-sm font-semibold">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg">
+            <div className="bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#26324B] px-3 py-1.5 rounded-lg">
               <span className="text-zinc-400 text-[10px] block font-sans">Incident Probability (P)</span>
-              <span className="text-blue-600 dark:text-blue-400">{(probability * 100).toFixed(1)}% / yr</span>
+              <span className="text-cyan-400">{(probability * 100).toFixed(1)}% / yr</span>
             </div>
             <span className="text-zinc-400 font-bold text-lg">×</span>
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg">
+            <div className="bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#26324B] px-3 py-1.5 rounded-lg">
               <span className="text-zinc-400 text-[10px] block font-sans">Potential Loss (L)</span>
-              <span className="text-amber-600 dark:text-amber-400">{formatCurrency(totalPotentialLoss)}</span>
+              <span className="text-amber-400">{formatCurrency(totalPotentialLoss)}</span>
             </div>
             <span className="text-zinc-400 font-bold text-lg">=</span>
-            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 px-3 py-1.5 rounded-lg">
-              <span className="text-rose-500 text-[10px] block font-sans">Expected Annual Loss (EAL)</span>
-              <span className="text-rose-600 dark:text-rose-400 font-bold">{formatCurrency(eal)}</span>
+            <div className="bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 rounded-lg">
+              <span className="text-rose-400 text-[10px] block font-sans">Expected Annual Loss (EAL)</span>
+              <span className="text-rose-400 font-bold">{formatCurrency(eal)}</span>
             </div>
           </div>
         </div>
 
         {/* Itemized Financial Loss Categories */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-            <Landmark className="w-4 h-4 text-blue-500" /> Itemized Potential Loss Parameters
+          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+            <Landmark className="w-4 h-4 text-cyan-400" /> Itemized Potential Loss Parameters
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
-            <div className="p-3 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-1">
+            <div className="p-3 bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] rounded-lg space-y-1">
               <div className="flex items-center gap-1.5 text-zinc-400 font-sans text-[11px]">
-                <Clock className="w-3.5 h-3.5 text-amber-500" /> Downtime (Availability)
+                <Clock className="w-3.5 h-3.5 text-amber-400" /> Downtime (Availability)
               </div>
               <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{formatCurrency(downtimeCost)}</div>
               <p className="text-[10px] text-zinc-500 font-sans">4h outage @ {formatCurrency(asset.downtimeCostPerHour)}/hr</p>
             </div>
 
-            <div className="p-3 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-1">
+            <div className="p-3 bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] rounded-lg space-y-1">
               <div className="flex items-center gap-1.5 text-zinc-400 font-sans text-[11px]">
-                <Database className="w-3.5 h-3.5 text-purple-500" /> Data Breach Liability
+                <Database className="w-3.5 h-3.5 text-purple-400" /> Data Breach Liability
               </div>
               <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{formatCurrency(dataBreachCost)}</div>
               <p className="text-[10px] text-zinc-500 font-sans">{(asset.recordsExposed || 0).toLocaleString()} recs @ ₹{asset.costPerRecord}/rec</p>
             </div>
 
-            <div className="p-3 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-1">
+            <div className="p-3 bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] rounded-lg space-y-1">
               <div className="flex items-center gap-1.5 text-zinc-400 font-sans text-[11px]">
-                <Scale className="w-3.5 h-3.5 text-rose-500" /> Regulatory Penalties
+                <Scale className="w-3.5 h-3.5 text-rose-400" /> Regulatory Penalties
               </div>
               <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{formatCurrency(regulatoryCost)}</div>
               <p className="text-[10px] text-zinc-500 font-sans">Statutory RBI/SEBI/DPDP liability</p>
             </div>
 
-            <div className="p-3 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-1">
+            <div className="p-3 bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] rounded-lg space-y-1">
               <div className="flex items-center gap-1.5 text-zinc-400 font-sans text-[11px]">
-                <RotateCcw className="w-3.5 h-3.5 text-emerald-500" /> Incident Recovery & Forensics
+                <RotateCcw className="w-3.5 h-3.5 text-emerald-400" /> Incident Recovery & Forensics
               </div>
               <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{formatCurrency(recoveryCost)}</div>
               <p className="text-[10px] text-zinc-500 font-sans">Technical restoration & vendor support</p>
             </div>
 
-            <div className="p-3 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-1 md:col-span-2">
+            <div className="p-3 bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] rounded-lg space-y-1 md:col-span-2">
               <div className="flex items-center gap-1.5 text-zinc-400 font-sans text-[11px]">
-                <ShieldAlert className="w-3.5 h-3.5 text-blue-500" /> Brand & Reputation Disruption
+                <ShieldAlert className="w-3.5 h-3.5 text-cyan-400" /> Brand & Reputation Disruption
               </div>
               <div className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{formatCurrency(reputationCost)}</div>
               <p className="text-[10px] text-zinc-500 font-sans">Customer churn and market valuation impact</p>
@@ -146,8 +146,8 @@ export default function FinancialDrilldownModal({ isOpen, onClose, asset, org, e
 
         {/* Primary Risk Drivers & Controls Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50/50 dark:bg-zinc-900/30 space-y-2">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Primary Risk Drivers</span>
+          <div className="border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4 bg-zinc-50/50 dark:bg-[#121824]/40 space-y-2">
+            <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Primary Risk Drivers</span>
             <ul className="text-xs space-y-1.5 text-zinc-700 dark:text-zinc-300">
               <li className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${asset.internetExposure === 'Yes' ? 'bg-rose-500' : 'bg-zinc-400'}`} />
@@ -158,19 +158,19 @@ export default function FinancialDrilldownModal({ isOpen, onClose, asset, org, e
                 <span>Criticality Tier: <b>{asset.criticality}</b> ({asset.dataSensitivity} Data Sensitivity)</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="w-2 h-2 rounded-full bg-cyan-400" />
                 <span>Upstream Dependencies: <b>{asset.dependencies?.length || 0} Connected Services</b></span>
               </li>
             </ul>
           </div>
 
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50/50 dark:bg-zinc-900/30 space-y-2">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Active Control Coverage</span>
+          <div className="border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4 bg-zinc-50/50 dark:bg-[#121824]/40 space-y-2">
+            <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Active Control Coverage</span>
             <div className="grid grid-cols-3 gap-2 text-xs font-mono">
               {asset.controls && Object.entries(asset.controls).map(([k, val]) => (
-                <div key={k} className="bg-white dark:bg-zinc-950 p-1.5 rounded border border-zinc-200 dark:border-zinc-800 text-center">
+                <div key={k} className="bg-white dark:bg-[#0D1117] p-1.5 rounded border border-zinc-200 dark:border-[#26324B] text-center">
                   <span className="uppercase text-[9px] text-zinc-400 block font-sans">{k}</span>
-                  <span className={`font-bold ${val >= 70 ? 'text-emerald-500' : val >= 40 ? 'text-amber-500' : 'text-rose-500'}`}>
+                  <span className={`font-bold ${val >= 70 ? 'text-emerald-400' : val >= 40 ? 'text-amber-400' : 'text-rose-400'}`}>
                     {val}%
                   </span>
                 </div>
@@ -180,34 +180,34 @@ export default function FinancialDrilldownModal({ isOpen, onClose, asset, org, e
         </div>
 
         {/* Full Traceability Flow Path */}
-        <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50 dark:bg-zinc-950">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-2">
+        <div className="border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4 bg-zinc-50 dark:bg-[#0D1117]">
+          <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest block mb-2">
             Connected Traceability Chain (Spec Section 21)
           </span>
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono text-zinc-600 dark:text-zinc-400">
-            <span className="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded">
+            <span className="font-bold text-rose-400 bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded">
               {formatCurrency(eal)} EAL
             </span>
             <ArrowRight className="w-3 h-3 text-zinc-400" />
-            <span className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">{asset.businessUnit}</span>
+            <span className="bg-zinc-100 dark:bg-[#121824] border border-zinc-200 dark:border-[#26324B] px-2 py-0.5 rounded">{asset.businessUnit}</span>
             <ArrowRight className="w-3 h-3 text-zinc-400" />
-            <span className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">{asset.name}</span>
+            <span className="bg-zinc-100 dark:bg-[#121824] border border-zinc-200 dark:border-[#26324B] px-2 py-0.5 rounded">{asset.name}</span>
             <ArrowRight className="w-3 h-3 text-zinc-400" />
-            <span className="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+            <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded">
               Score: {riskScore}/100
             </span>
             <ArrowRight className="w-3 h-3 text-zinc-400" />
-            <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded">
+            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">
               Knapsack Portfolio
             </span>
           </div>
         </div>
 
         {/* Action button */}
-        <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="flex justify-end pt-2 border-t border-zinc-100 dark:border-[#1E2638]">
           <button
             onClick={onClose}
-            className="bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-semibold rounded-lg px-4 py-2 text-xs transition-colors cursor-pointer"
+            className="bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold rounded-lg px-4 py-2 text-xs transition-colors cursor-pointer"
           >
             Close Drill-Down
           </button>

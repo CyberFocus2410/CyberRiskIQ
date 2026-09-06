@@ -1,8 +1,7 @@
 // src/components/SecurityAssessmentControl.jsx
-// CyberRiskIQ AI Security Assessment Engine Control Interface
-// Supports both LIVE automated security scans and DEMONSTRATION / SYNTHETIC assessment runs.
+// CyberRiskIQ AI Security Assessment Engine — Real-Time Attack Graph & Telemetry Control
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRisk } from '../context/RiskContext';
 import Modal from './Modal';
 import { 
@@ -14,7 +13,14 @@ import {
   CheckCircle2, 
   AlertTriangle,
   Cpu,
-  Layers
+  Network,
+  Share2,
+  Activity,
+  Layers,
+  ArrowRight,
+  Shield,
+  Zap,
+  Radio
 } from 'lucide-react';
 
 export default function SecurityAssessmentControl() {
@@ -26,16 +32,129 @@ export default function SecurityAssessmentControl() {
   const [log, setLog] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [showConsent, setShowConsent] = useState(false);
-  const [showLogModal, setShowLogModal] = useState(false);
+  const [showConsoleModal, setShowConsoleModal] = useState(false);
+  const [activeModalTab, setActiveModalTab] = useState('graph'); // 'graph' | 'terminal'
   const [consentAcknowledged, setConsentAcknowledged] = useState(false);
+  
+  // Real-time graph state
+  const [graphNodes, setGraphNodes] = useState([]);
+  const [graphEdges, setGraphEdges] = useState([]);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [currentPhase, setCurrentPhase] = useState('Standby');
+  const [progressPct, setProgressPct] = useState(0);
 
   const logBottomRef = useRef(null);
+  const eventSourceRef = useRef(null);
+  const wsRef = useRef(null);
 
   useEffect(() => {
-    if (showLogModal && logBottomRef.current) {
+    if (showConsoleModal && logBottomRef.current) {
       logBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [log, showLogModal]);
+  }, [log, showConsoleModal, activeModalTab]);
+
+  // Clean up listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) eventSourceRef.current.close();
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
+
+  const resetGraph = (initialTarget) => {
+    setGraphNodes([
+      {
+        id: 'node-target-root',
+        label: initialTarget,
+        type: 'target',
+        status: 'active',
+        x: 400,
+        y: 220,
+        details: 'Initial Assessment Scope Target Root'
+      }
+    ]);
+    setGraphEdges([]);
+    setSelectedNode(null);
+    setProgressPct(5);
+    setCurrentPhase('Initializing Target');
+  };
+
+  const handleAssessmentEvent = (event) => {
+    if (!event) return;
+
+    if (event.progress !== undefined) {
+      setProgressPct(event.progress);
+    }
+    if (event.phase) {
+      setCurrentPhase(event.phase.replace(':', ' - ').toUpperCase());
+    }
+
+    if (event.message) {
+      setLog(prev => prev + event.message + '\n');
+    }
+
+    // Add or update node
+    if (event.node) {
+      setGraphNodes(prev => {
+        const existingIdx = prev.findIndex(n => n.id === event.node.id);
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx] = { ...updated[existingIdx], ...event.node };
+          return updated;
+        }
+
+        // Layout algorithm based on node type and count
+        const count = prev.length;
+        let x = 400;
+        let y = 220;
+
+        if (event.node.type === 'probe') {
+          x = 400;
+          y = 70;
+        } else if (event.node.type === 'service') {
+          const angle = (count * 1.2) + Math.PI;
+          x = 400 + Math.cos(angle) * 160;
+          y = 220 + Math.sin(angle) * 90;
+        } else if (event.node.type === 'endpoint') {
+          const angle = (count * 0.9) + 0.3;
+          x = 400 + Math.cos(angle) * 220;
+          y = 220 + Math.sin(angle) * 120;
+        } else if (event.node.type === 'vulnerability') {
+          x = 220 + (count % 3) * 180;
+          y = 350 + (count % 2) * 40;
+        } else if (event.node.type === 'loss') {
+          x = 650;
+          y = 350;
+        } else if (event.node.type === 'error') {
+          x = 400;
+          y = 360;
+        }
+
+        return [...prev, { ...event.node, x, y }];
+      });
+    }
+
+    // Add edge
+    if (event.edge) {
+      setGraphEdges(prev => {
+        if (prev.some(e => e.id === event.edge.id)) {
+          return prev.map(e => e.id === event.edge.id ? { ...e, ...event.edge } : e);
+        }
+        return [...prev, event.edge];
+      });
+    }
+
+    // Handle terminal status
+    if (event.status === 'completed') {
+      setStatus('done');
+      if (event.results && ingestAssessmentFindings) {
+        ingestAssessmentFindings(event.results);
+      }
+    } else if (event.status === 'failed') {
+      setStatus('error');
+      setErrorMessage(event.error || event.message || 'Assessment failed on target.');
+    }
+  };
 
   const startScan = () => {
     setShowConsent(true);
@@ -46,55 +165,69 @@ export default function SecurityAssessmentControl() {
     setShowConsent(false);
     setStatus('scanning');
     setErrorMessage('');
-    setLog(`[CYBERRISKIQ-INIT] Initializing AI Security Assessment Engine...\nTarget: ${target}\nMode: ${assessmentMode === 'live' ? 'LIVE ASSESSMENT' : 'DEMONSTRATION / SYNTHETIC ASSESSMENT'}\nConnecting to security execution engine...\n`);
-    
-    let pollInterval = null;
+    resetGraph(target);
+    setShowConsoleModal(true);
+    setActiveModalTab('graph');
 
     try {
       const resp = await fetch('/api/assessment/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target, mode: assessmentMode })
+        body: JSON.stringify({ 
+          target, 
+          mode: assessmentMode,
+          authorized: true
+        })
       });
       
       const data = await resp.json();
       if (!resp.ok) {
-        throw new Error(data.error || 'Security assessment failed to start');
+        throw new Error(data.error || data.detail || 'Security assessment failed to start');
       }
 
       const activeRunId = data.runId;
       setRunId(activeRunId);
 
-      // Poll logs & status
-      pollInterval = setInterval(async () => {
-        try {
-          const logResp = await fetch(`/api/assessment/log/${activeRunId}`);
-          if (logResp.ok) {
-            const logData = await logResp.text();
-            setLog(logData);
-          }
+      // Connect to real-time Server-Sent Events (SSE)
+      if (eventSourceRef.current) eventSourceRef.current.close();
 
-          const resultResp = await fetch(`/api/assessment/result/${activeRunId}`);
-          if (resultResp.ok) {
-            const result = await resultResp.json();
-            if (result.success && result.results) {
-              clearInterval(pollInterval);
-              if (ingestAssessmentFindings) {
-                await ingestAssessmentFindings(result.results);
-              }
-              setStatus('done');
-            }
-          }
-        } catch (pollErr) {
-          console.warn('Error polling assessment telemetry:', pollErr);
-        }
-      }, 1500);
+      const sseUrl = `/api/assessment/events/${activeRunId}`;
+      const es = new EventSource(sseUrl);
+      eventSourceRef.current = es;
+
+      es.onmessage = (e) => {
+        try {
+          const parsedEvent = JSON.parse(e.data);
+          handleAssessmentEvent(parsedEvent);
+        } catch (_) {}
+      };
+
+      es.onerror = () => {
+        // Fallback polling if SSE disconnects
+        fetchFallbackResults(activeRunId);
+      };
+
     } catch (e) {
-      if (pollInterval) clearInterval(pollInterval);
       console.error(e);
-      setErrorMessage(e.message || 'Security assessment error occurred');
+      setErrorMessage(e.message || 'Security assessment initialization error occurred');
       setStatus('error');
     }
+  };
+
+  const fetchFallbackResults = async (activeRunId) => {
+    try {
+      const resultResp = await fetch(`/api/assessment/result/${activeRunId}`);
+      if (resultResp.ok) {
+        const res = await resultResp.json();
+        if (res.success && res.results) {
+          if (ingestAssessmentFindings) ingestAssessmentFindings(res.results);
+          setStatus('done');
+        } else if (res.status === 'failed') {
+          setStatus('error');
+          setErrorMessage(res.error || 'Live security assessment failed on target.');
+        }
+      }
+    } catch (_) {}
   };
 
   const handleDownloadPdf = () => {
@@ -102,49 +235,62 @@ export default function SecurityAssessmentControl() {
     window.open(`/api/assessment/report/${runId}`, '_blank');
   };
 
+  const getNodeColor = (node) => {
+    if (node.type === 'target') return '#00F0FF';
+    if (node.type === 'probe') return '#6366F1';
+    if (node.type === 'service') return '#3B82F6';
+    if (node.type === 'endpoint') return '#10B981';
+    if (node.type === 'vulnerability') {
+      return node.severity === 'Critical' ? '#EF4444' : '#F59E0B';
+    }
+    if (node.type === 'loss') return '#EC4899';
+    if (node.type === 'error') return '#EF4444';
+    return '#94A3B8';
+  };
+
   return (
-    <div className="bg-zinc-50 dark:bg-zinc-900/60 p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
-      {/* Header */}
+    <div className="bg-white dark:bg-[#0D1117] p-4 rounded-xl border border-zinc-200 dark:border-[#1E2638] space-y-3.5 shadow-sm transition-theme">
+      {/* Widget Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
-            <Cpu className="w-4 h-4" />
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-cyan-500/10 text-cyan-600 dark:text-[#00F0FF] rounded-lg border border-cyan-500/20">
+            <Radio className={`w-4 h-4 ${status === 'scanning' ? 'animate-pulse text-[#00F0FF]' : ''}`} />
           </div>
           <div>
-            <span className="text-xs font-bold text-zinc-950 dark:text-zinc-50 block">AI Security Assessment</span>
-            <span className="text-[10px] text-zinc-400 font-mono block">Autonomous Probing</span>
+            <span className="text-xs font-bold font-display text-zinc-950 dark:text-zinc-50 block tracking-tight">AI Security Engine</span>
+            <span className="text-[10px] text-zinc-400 font-mono block">Real-Time Event Graph</span>
           </div>
         </div>
 
         {status === 'scanning' && (
-          <span className="flex items-center gap-1 text-[10px] text-amber-500 font-medium animate-pulse font-mono">
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-500 font-bold font-mono animate-pulse">
             <Loader2 className="w-3 h-3 animate-spin" />
-            ASSESSING
+            PROBING
           </span>
         )}
         {status === 'done' && (
-          <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold font-mono">
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-500 font-bold font-mono">
             <CheckCircle2 className="w-3 h-3" />
             READY
           </span>
         )}
         {status === 'error' && (
-          <span className="flex items-center gap-1 text-[10px] text-rose-500 font-bold font-mono">
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-500 font-bold font-mono">
             <AlertTriangle className="w-3 h-3" />
-            ERROR
+            FAILED
           </span>
         )}
       </div>
 
       {/* Mode Selector */}
-      <div className="flex items-center gap-1 p-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[10px] font-semibold">
+      <div className="grid grid-cols-2 gap-1.5 p-1 bg-zinc-100 dark:bg-[#08090D] border border-zinc-200 dark:border-[#1C2333] rounded-lg text-[10px] font-semibold">
         <button
           type="button"
           disabled={status === 'scanning'}
           onClick={() => setAssessmentMode('demo')}
-          className={`flex-1 py-1 rounded transition-colors cursor-pointer text-center ${
+          className={`py-1.5 rounded transition-all cursor-pointer text-center ${
             assessmentMode === 'demo'
-              ? 'bg-blue-600 text-white font-bold'
+              ? 'bg-blue-600 text-white font-bold shadow-sm'
               : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
           }`}
         >
@@ -154,9 +300,9 @@ export default function SecurityAssessmentControl() {
           type="button"
           disabled={status === 'scanning'}
           onClick={() => setAssessmentMode('live')}
-          className={`flex-1 py-1 rounded transition-colors cursor-pointer text-center ${
+          className={`py-1.5 rounded transition-all cursor-pointer text-center ${
             assessmentMode === 'live'
-              ? 'bg-purple-600 text-white font-bold'
+              ? 'bg-indigo-600 text-white font-bold shadow-sm'
               : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
           }`}
         >
@@ -166,8 +312,8 @@ export default function SecurityAssessmentControl() {
 
       {/* Target input */}
       <div className="space-y-1">
-        <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-          Target Scope (Path or URL)
+        <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block font-mono">
+          Target Scope (URL / Path)
         </label>
         <input
           type="text"
@@ -175,56 +321,60 @@ export default function SecurityAssessmentControl() {
           disabled={status === 'scanning'}
           onChange={(e) => setTarget(e.target.value)}
           placeholder="./src or https://api.finsecure.internal"
-          className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-blue-500 font-mono transition-colors disabled:opacity-60"
+          className="w-full text-xs px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-[#08090D] border border-zinc-200 dark:border-[#1E2638] text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500 font-mono transition-colors disabled:opacity-60"
         />
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-col gap-2 pt-1">
+      {/* Launch Action */}
+      <div className="space-y-2 pt-0.5">
         <button
           onClick={startScan}
           disabled={status === 'scanning'}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold font-display shadow-md transition-all disabled:opacity-50 cursor-pointer"
         >
           {status === 'scanning' ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Executing Assessment...</span>
+              <span>Executing Assessment ({progressPct}%)...</span>
             </>
           ) : (
             <>
-              <Play className="w-3.5 h-3.5" />
-              <span>Launch AI Assessment</span>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Launch Assessment</span>
             </>
           )}
         </button>
 
         {/* Secondary options when active or completed */}
-        {(status === 'done' || runId || log) && (
-          <div className="flex items-center gap-1.5">
+        {(status === 'done' || status === 'scanning' || runId || log) && (
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
             <button
-              onClick={() => setShowLogModal(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
+              onClick={() => {
+                setShowConsoleModal(true);
+                setActiveModalTab('graph');
+              }}
+              className="flex items-center justify-center gap-1.5 px-2 py-1.5 bg-zinc-100 dark:bg-[#161B26] hover:bg-zinc-200 dark:hover:bg-[#1E2638] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-[#26324B] rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
             >
-              <Terminal className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Console</span>
+              <Network className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Attack Graph</span>
             </button>
 
-            {runId && (
-              <button
-                onClick={handleDownloadPdf}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5 text-blue-500" />
-                <span>PDF</span>
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setShowConsoleModal(true);
+                setActiveModalTab('terminal');
+              }}
+              className="flex items-center justify-center gap-1.5 px-2 py-1.5 bg-zinc-100 dark:bg-[#161B26] hover:bg-zinc-200 dark:hover:bg-[#1E2638] text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-[#26324B] rounded-lg text-[11px] font-medium transition-colors cursor-pointer"
+            >
+              <Terminal className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Terminal</span>
+            </button>
           </div>
         )}
       </div>
 
       {errorMessage && (
-        <div className="p-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-lg text-[11px] text-rose-600 dark:text-rose-400 leading-tight">
+        <div className="p-2.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-lg text-[11px] text-rose-600 dark:text-rose-400 font-medium leading-relaxed">
           {errorMessage}
         </div>
       )}
@@ -234,39 +384,34 @@ export default function SecurityAssessmentControl() {
         <Modal
           isOpen={showConsent}
           onClose={() => setShowConsent(false)}
-          title="CyberRiskIQ AI Security Assessment Authorization"
+          title="Security Assessment Authorization"
           maxWidth="max-w-md"
         >
           <div className="space-y-4">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl flex gap-3 text-amber-800 dark:text-amber-300 text-xs">
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl flex gap-3 text-amber-800 dark:text-amber-300 text-xs">
               <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="space-y-1">
-                <span className="font-bold block">
+                <span className="font-bold font-display block text-sm">
                   {assessmentMode === 'live' ? 'Active Target Security Assessment' : 'Demonstration Security Assessment'}
                 </span>
-                <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400/90">
-                  Target: <code className="bg-amber-100 dark:bg-amber-900/60 px-1 py-0.5 rounded font-mono">{target}</code>.
-                  {assessmentMode === 'live'
-                    ? ' Autonomous LLM security testing agents will probe endpoints for exploit validation.'
-                    : ' High-fidelity synthetic penetration testing scenarios will be simulated and validated.'}
+                <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400/90 font-mono">
+                  Target: <span className="bg-amber-100 dark:bg-amber-900/60 px-1 py-0.5 rounded font-bold">{target}</span>
                 </p>
               </div>
             </div>
 
-            <div className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 leading-relaxed">
-              <p>
-                By proceeding, you confirm that you have explicit, documented authorization to test the specified scope and that this assessment complies with organizational risk policy.
-              </p>
-            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+              By proceeding, you confirm that you have explicit, documented authorization to test the specified scope and that this assessment complies with organizational risk policy.
+            </p>
 
-            <label className="flex items-start gap-2.5 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 cursor-pointer">
+            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] cursor-pointer">
               <input
                 type="checkbox"
                 checked={consentAcknowledged}
                 onChange={(e) => setConsentAcknowledged(e.target.checked)}
                 className="mt-0.5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
+              <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                 I am authorized to test this target and agree to execute the security assessment.
               </span>
             </label>
@@ -278,7 +423,7 @@ export default function SecurityAssessmentControl() {
                   setShowConsent(false);
                   setConsentAcknowledged(false);
                 }}
-                className="px-3.5 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -286,53 +431,244 @@ export default function SecurityAssessmentControl() {
                 type="button"
                 disabled={!consentAcknowledged}
                 onClick={confirmConsent}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold font-display shadow-md transition-all cursor-pointer"
               >
-                Authorize & Start Assessment
+                Authorize & Start Scan
               </button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Live Console Output Modal */}
-      {showLogModal && (
+      {/* Real-Time Attack Graph & Live Console Modal */}
+      {showConsoleModal && (
         <Modal
-          isOpen={showLogModal}
-          onClose={() => setShowLogModal(false)}
-          title="CyberRiskIQ AI Security Assessment Telemetry"
-          maxWidth="max-w-3xl"
+          isOpen={showConsoleModal}
+          onClose={() => setShowConsoleModal(false)}
+          title="CyberRiskIQ Security Engine Telemetry"
+          maxWidth="max-w-4xl"
         >
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 font-mono text-zinc-500">
-                <span>Session ID:</span>
-                <span className="font-bold text-zinc-900 dark:text-zinc-100">{runId || 'N/A'}</span>
+            {/* Header controls & stats */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-zinc-100 dark:bg-[#08090D] border border-zinc-200 dark:border-[#1C2333] rounded-xl text-xs">
+              <div className="flex items-center gap-3 font-mono">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-400">Session:</span>
+                  <span className="font-bold text-zinc-900 dark:text-zinc-100">{runId || 'INITIALIZING'}</span>
+                </div>
                 <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-sans text-[10px] font-bold uppercase">
                   {assessmentMode.toUpperCase()} MODE
                 </span>
+                <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-mono text-[10px] font-bold">
+                  {currentPhase}
+                </span>
               </div>
-              {runId && (
-                <button
-                  onClick={handleDownloadPdf}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF Report</span>
-                </button>
-              )}
+
+              <div className="flex items-center gap-2">
+                {runId && status === 'done' && (
+                  <button
+                    onClick={handleDownloadPdf}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold font-display bg-blue-600 text-white rounded-lg hover:bg-blue-500 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Report</span>
+                  </button>
+                )}
+
+                {/* Tab Switcher */}
+                <div className="flex items-center bg-white dark:bg-[#161B26] p-0.5 rounded-lg border border-zinc-200 dark:border-[#26324B]">
+                  <button
+                    onClick={() => setActiveModalTab('graph')}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                      activeModalTab === 'graph'
+                        ? 'bg-blue-600 text-white font-bold'
+                        : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    Attack Graph
+                  </button>
+                  <button
+                    onClick={() => setActiveModalTab('terminal')}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                      activeModalTab === 'terminal'
+                        ? 'bg-blue-600 text-white font-bold'
+                        : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    Terminal Logs
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-[#09090d] border border-zinc-800 rounded-xl p-4 font-mono text-xs text-zinc-200 overflow-y-auto max-h-[420px] leading-relaxed shadow-inner">
-              <pre className="whitespace-pre-wrap">{log || 'Waiting for assessment engine telemetry output...'}</pre>
-              <div ref={logBottomRef} />
+            {/* Progress bar */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-mono text-zinc-400">
+                <span>Phase: {currentPhase}</span>
+                <span className="font-bold text-zinc-200">{progressPct}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-zinc-200 dark:bg-[#1C2333] rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    status === 'error' 
+                      ? 'bg-rose-500' 
+                      : status === 'done' 
+                        ? 'bg-emerald-500' 
+                        : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400'
+                  }`}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
             </div>
 
-            <div className="flex justify-between items-center pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-400">
-              <span>Status: <strong className="uppercase text-zinc-300">{status}</strong></span>
+            {/* Main Visual Content Area */}
+            {activeModalTab === 'graph' ? (
+              <div className="relative w-full h-[420px] bg-[#08090D] border border-[#1C2333] rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
+                {/* SVG Real-Time Node-Link Graph */}
+                <svg className="w-full h-full" viewBox="0 0 800 420">
+                  <defs>
+                    <marker id="arrow-active" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#00F0FF" />
+                    </marker>
+                    <marker id="arrow-danger" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#EF4444" />
+                    </marker>
+                    <marker id="arrow-safe" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3B82F6" />
+                    </marker>
+                  </defs>
+
+                  {/* Render Edges */}
+                  {graphEdges.map((edge) => {
+                    const sourceNode = graphNodes.find(n => n.id === edge.source);
+                    const targetNode = graphNodes.find(n => n.id === edge.target);
+                    if (!sourceNode || !targetNode) return null;
+
+                    const isCompromised = edge.status === 'compromised';
+                    const isActive = edge.status === 'active';
+                    const strokeColor = isCompromised ? '#EF4444' : isActive ? '#00F0FF' : '#26324B';
+                    const markerUrl = isCompromised ? 'url(#arrow-danger)' : isActive ? 'url(#arrow-active)' : 'url(#arrow-safe)';
+
+                    return (
+                      <g key={edge.id}>
+                        <line
+                          x1={sourceNode.x}
+                          y1={sourceNode.y}
+                          x2={targetNode.x}
+                          y2={targetNode.y}
+                          stroke={strokeColor}
+                          strokeWidth={isCompromised ? 2.5 : 1.5}
+                          className={isActive || isCompromised ? 'animate-data-flow' : ''}
+                          markerEnd={markerUrl}
+                        />
+                      </g>
+                    );
+                  })}
+
+                  {/* Render Nodes */}
+                  {graphNodes.map((node) => {
+                    const isSelected = selectedNode?.id === node.id;
+                    const nodeColor = getNodeColor(node);
+                    const isVulnerability = node.type === 'vulnerability';
+
+                    return (
+                      <g
+                        key={node.id}
+                        transform={`translate(${node.x}, ${node.y})`}
+                        className="cursor-pointer transition-transform duration-300 hover:scale-110"
+                        onClick={() => setSelectedNode(node)}
+                      >
+                        {/* Pulsing ring for target root or active probe */}
+                        {(node.type === 'target' || node.type === 'probe' || isVulnerability) && (
+                          <circle
+                            r={isVulnerability ? 24 : 28}
+                            fill="none"
+                            stroke={nodeColor}
+                            strokeWidth="1.5"
+                            opacity="0.4"
+                            className="animate-ping"
+                          />
+                        )}
+
+                        <circle
+                          r={node.type === 'target' ? 22 : isVulnerability ? 18 : 14}
+                          fill={nodeColor}
+                          stroke={isSelected ? '#FFFFFF' : '#08090D'}
+                          strokeWidth={isSelected ? 2.5 : 1.5}
+                          className="shadow-lg"
+                        />
+
+                        {/* Node Label */}
+                        <text
+                          y={node.type === 'target' ? 34 : 26}
+                          textAnchor="middle"
+                          fill="#E2E8F0"
+                          className="text-[10px] font-bold font-mono tracking-tight pointer-events-none drop-shadow"
+                        >
+                          {node.label.length > 22 ? `${node.label.substring(0, 20)}...` : node.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* Node Detail Overlay Card */}
+                {selectedNode && (
+                  <div className="absolute bottom-4 left-4 bg-[#0D1117]/95 border border-[#26324B] p-3.5 rounded-xl shadow-2xl w-80 text-xs space-y-2 backdrop-blur-md">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider block">
+                          Type: {selectedNode.type}
+                        </span>
+                        <h4 className="font-bold text-zinc-100 font-display text-sm">{selectedNode.label}</h4>
+                      </div>
+                      <button
+                        onClick={() => setSelectedNode(null)}
+                        className="text-zinc-400 hover:text-zinc-200 text-base font-bold"
+                      >
+                        &times;
+                      </button>
+                    </div>
+
+                    {selectedNode.severity && (
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
+                          selectedNode.severity === 'Critical'
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {selectedNode.severity} Severity
+                        </span>
+                        {selectedNode.cvss && (
+                          <span className="font-mono text-[10px] text-zinc-300">
+                            CVSS: <strong className="text-rose-400">{selectedNode.cvss}</strong>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedNode.details && (
+                      <p className="text-[11px] text-zinc-300 leading-relaxed font-mono bg-[#08090D] p-2 rounded-lg border border-[#1E2638]">
+                        {selectedNode.details}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Terminal View */
+              <div className="bg-[#08090D] border border-[#1C2333] rounded-xl p-4 font-mono text-xs text-zinc-200 overflow-y-auto max-h-[420px] leading-relaxed shadow-inner">
+                <pre className="whitespace-pre-wrap">{log || 'Waiting for assessment engine telemetry output...'}</pre>
+                <div ref={logBottomRef} />
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="flex justify-between items-center pt-2 border-t border-zinc-200 dark:border-[#1E2638] text-xs text-zinc-400 font-mono">
+              <span>Status: <strong className="uppercase text-zinc-200">{status}</strong></span>
               <button
-                onClick={() => setShowLogModal(false)}
-                className="px-4 py-2 bg-zinc-900 dark:bg-zinc-800 hover:bg-zinc-800 dark:hover:bg-zinc-700 text-white font-semibold rounded-lg transition-colors cursor-pointer"
+                onClick={() => setShowConsoleModal(false)}
+                className="px-4 py-2 bg-zinc-900 dark:bg-[#161B26] hover:bg-zinc-800 dark:hover:bg-[#26324B] text-white font-semibold rounded-lg transition-colors cursor-pointer"
               >
                 Close Console
               </button>

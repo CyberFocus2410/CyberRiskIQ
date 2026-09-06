@@ -80,25 +80,25 @@ export default function AssetInventory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200 dark:border-[#1C2333] pb-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Asset Inventory & Dependency Map</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Central registry of systems, servers, applications, and upstream/downstream flow.</p>
+          <h1 className="text-3xl font-extrabold font-display tracking-tight text-zinc-950 dark:text-zinc-50">Asset Inventory & Topology</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1 text-sm">Central multi-tenant registry of systems, servers, APIs, and upstream/downstream flow.</p>
         </div>
 
-        <div className="flex gap-2 bg-zinc-100 dark:bg-[#0c0c0f] p-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="flex gap-1.5 bg-zinc-100 dark:bg-[#08090D] p-1 rounded-xl border border-zinc-200 dark:border-[#1C2333]">
           <button
             onClick={() => setViewMode('table')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-              viewMode === 'table' ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold font-display rounded-lg transition-all cursor-pointer ${
+              viewMode === 'table' ? 'bg-white dark:bg-[#161B26] text-blue-600 dark:text-[#00F0FF] shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
             <Table className="w-3.5 h-3.5" /> Table Register
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-              viewMode === 'map' ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold font-display rounded-lg transition-all cursor-pointer ${
+              viewMode === 'map' ? 'bg-white dark:bg-[#161B26] text-blue-600 dark:text-[#00F0FF] shadow-sm' : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
             }`}
           >
             <Network className="w-3.5 h-3.5" /> Dependency Map
@@ -111,18 +111,18 @@ export default function AssetInventory() {
           {/* Main Table Panel */}
           <div className={`transition-all duration-300 ${selectedAsset ? 'w-full lg:w-2/3' : 'w-full'} space-y-4`}>
             {/* Filters bar */}
-            <div className="flex justify-between items-center bg-white dark:bg-[#0c0c0f] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <div className="flex justify-between items-center bg-white dark:bg-[#0D1117] p-4 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs text-zinc-400 font-semibold uppercase">Business Unit Filter:</span>
+                <span className="text-xs text-zinc-400 font-bold font-mono uppercase">Business Unit Filter:</span>
                 <div className="flex flex-wrap gap-1">
                   {businessUnits.map((bu, i) => (
                     <button
                       key={i}
                       onClick={() => setFilterBu(bu)}
-                      className={`text-xs px-2.5 py-1 rounded-md border transition-all cursor-pointer ${
+                      className={`text-xs px-2.5 py-1 rounded-md border font-mono transition-all cursor-pointer ${
                         filterBu === bu
-                          ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400 font-semibold'
-                          : 'bg-white dark:bg-transparent border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                          ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-[#161B26] dark:border-cyan-500/40 dark:text-[#00F0FF] font-bold'
+                          : 'bg-white dark:bg-transparent border-zinc-200 dark:border-[#1E2638] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
                       }`}
                     >
                       {bu}
@@ -136,7 +136,7 @@ export default function AssetInventory() {
               
               <button
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg px-3 py-2 transition-colors cursor-pointer shadow-sm font-sans"
+                className="flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold font-display rounded-lg px-3.5 py-2 transition-all cursor-pointer shadow-md"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Asset
               </button>
@@ -349,44 +349,44 @@ export default function AssetInventory() {
 
           {/* Details Sidebar Panel */}
           {selectedAsset && (
-            <div className="w-full lg:w-1/3 bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme flex flex-col justify-between space-y-6">
+            <div className="w-full lg:w-1/3 bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme flex flex-col justify-between space-y-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="font-mono text-xs text-zinc-400">{selectedAsset.id}</span>
-                    <h2 className="text-xl font-bold text-zinc-950 dark:text-zinc-50">{selectedAsset.name}</h2>
+                    <span className="font-mono text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{selectedAsset.id}</span>
+                    <h2 className="text-xl font-bold font-display text-zinc-950 dark:text-zinc-50">{selectedAsset.name}</h2>
                   </div>
                   <button
                     onClick={() => setSelectedAsset(null)}
-                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-lg font-bold"
+                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-lg font-bold cursor-pointer"
                   >
                     &times;
                   </button>
                 </div>
 
-                <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-3 text-xs">
+                <div className="border-t border-zinc-100 dark:border-[#1C2333] pt-4 space-y-3 text-xs">
                   <div>
-                    <span className="text-zinc-400 block mb-1">Asset Owner</span>
+                    <span className="text-zinc-400 block mb-0.5 font-mono text-[10px] uppercase">Asset Owner</span>
                     <span className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedAsset.owner}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-400 block mb-1">Business Service</span>
+                    <span className="text-zinc-400 block mb-0.5 font-mono text-[10px] uppercase">Business Service</span>
                     <span className="font-semibold text-zinc-800 dark:text-zinc-200">{selectedAsset.businessService}</span>
                   </div>
                   <div>
-                    <span className="text-zinc-400 block mb-1">Impact Potential</span>
+                    <span className="text-zinc-400 block mb-0.5 font-mono text-[10px] uppercase">Impact Potential</span>
                     <span className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">
                       ₹{(calculateAssetFinancialImpact(selectedAsset) / 100000).toFixed(1)} Lakh
                     </span>
                   </div>
                   {selectedAsset.dependencies.length > 0 && (
                     <div>
-                      <span className="text-zinc-400 block mb-1">Upstream Dependencies</span>
+                      <span className="text-zinc-400 block mb-1 font-mono text-[10px] uppercase">Upstream Dependencies</span>
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {selectedAsset.dependencies.map(depId => {
                           const depAsset = assets.find(a => a.id === depId);
                           return (
-                            <span key={depId} className="bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-200/50 dark:border-blue-900/30 px-2.5 py-0.5 rounded font-mono text-[10px]">
+                            <span key={depId} className="bg-cyan-50 text-cyan-600 dark:bg-[#161B26] dark:text-[#00F0FF] border border-cyan-500/30 px-2.5 py-0.5 rounded font-mono text-[10px] font-bold">
                               {depAsset ? depAsset.name : depId}
                             </span>
                           );
@@ -397,13 +397,13 @@ export default function AssetInventory() {
                 </div>
               </div>
 
-              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
-                <h3 className="text-xs font-bold text-zinc-950 dark:text-zinc-50 mb-2 uppercase tracking-wide">Controls Status</h3>
+              <div className="border-t border-zinc-100 dark:border-[#1C2333] pt-4">
+                <h3 className="text-xs font-bold font-display text-zinc-950 dark:text-zinc-50 mb-2 uppercase tracking-wide">Controls Posture</h3>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {Object.entries(selectedAsset.controls).map(([key, val]) => (
-                    <div key={key} className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 p-2 rounded-lg flex justify-between items-center">
-                      <span className="uppercase text-[9px] text-zinc-400 font-bold">{key}</span>
-                      <span className={`font-mono font-bold ${val >= 75 ? 'text-emerald-500' : val >= 45 ? 'text-orange-400' : 'text-rose-500'}`}>
+                    <div key={key} className="bg-zinc-50 dark:bg-[#121620] border border-zinc-200 dark:border-[#1E2638] p-2 rounded-lg flex justify-between items-center">
+                      <span className="uppercase text-[9px] text-zinc-400 font-mono font-bold">{key}</span>
+                      <span className={`font-mono font-bold ${val >= 75 ? 'text-emerald-500' : val >= 45 ? 'text-amber-400' : 'text-rose-500'}`}>
                         {val}%
                       </span>
                     </div>
@@ -415,67 +415,67 @@ export default function AssetInventory() {
         </div>
       ) : (
         /* Dependency Map Graph View */
-        <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme flex flex-col items-center">
-          <div className="max-w-xl text-center space-y-2 mb-6">
-            <h2 className="text-lg font-bold text-zinc-950 dark:text-zinc-50">Infrastructure Flow & Blast Radius</h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Click a node to inspect linkages. Connected lines indicate critical data flows.</p>
+        <div className="bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme flex flex-col items-center space-y-4">
+          <div className="max-w-xl text-center space-y-1">
+            <h2 className="text-lg font-bold font-display text-zinc-950 dark:text-zinc-50">Infrastructure Flow & Blast Radius</h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Click a node to inspect dependencies. Connected lines indicate critical data flows.</p>
           </div>
 
-          <div className="relative w-full max-w-4xl h-[450px] border border-zinc-100 dark:border-zinc-800/80 rounded-xl bg-zinc-50 dark:bg-zinc-950 overflow-hidden flex items-center justify-center">
-            {/* Simple SVG Graph */}
+          <div className="relative w-full max-w-4xl h-[450px] border border-zinc-200 dark:border-[#1C2333] rounded-xl bg-zinc-50 dark:bg-[#08090D] overflow-hidden flex items-center justify-center shadow-inner">
+            {/* SVG Graph */}
             <svg className="w-full h-full" viewBox="0 0 800 450">
               <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="15" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#71717a" />
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#00F0FF" />
                 </marker>
               </defs>
 
               {/* Connections */}
-              <line x1="200" y1="225" x2="400" y2="125" stroke="#71717a" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow)" />
-              <line x1="400" y1="125" x2="600" y2="225" stroke="#71717a" strokeWidth="2" markerEnd="url(#arrow)" />
-              <line x1="400" y1="325" x2="200" y2="225" stroke="#71717a" strokeWidth="2" markerEnd="url(#arrow)" />
+              <line x1="200" y1="225" x2="400" y2="125" stroke="#00F0FF" strokeWidth="2" strokeDasharray="5,5" markerEnd="url(#arrow)" className="animate-data-flow" />
+              <line x1="400" y1="125" x2="600" y2="225" stroke="#3B82F6" strokeWidth="2" markerEnd="url(#arrow)" />
+              <line x1="400" y1="325" x2="200" y2="225" stroke="#6366F1" strokeWidth="2" markerEnd="url(#arrow)" />
 
-              {/* Node 1: E-Commerce Frontend */}
+              {/* Node 1: Web Frontend */}
               <g transform="translate(200, 225)" className="cursor-pointer group" onClick={() => setSelectedAsset(assets[1])}>
-                <circle r="30" fill="#0284c7" className="group-hover:fill-blue-500 transition-colors shadow" />
+                <circle r="30" fill="#0284c7" className="group-hover:fill-cyan-400 transition-colors shadow-lg" />
                 <text y="5" textAnchor="middle" fill="#ffffff" className="text-[10px] font-bold font-mono">AST-002</text>
-                <text y="48" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold text-zinc-800 dark:text-zinc-300">Web Frontend</text>
+                <text y="48" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold font-display text-zinc-800 dark:text-zinc-300">Web Frontend</text>
               </g>
 
               {/* Node 2: Payment Gateway API */}
               <g transform="translate(400, 125)" className="cursor-pointer group" onClick={() => setSelectedAsset(assets[0])}>
-                <circle r="35" fill="#e11d48" className="group-hover:fill-rose-500 transition-colors shadow" />
+                <circle r="35" fill="#e11d48" className="group-hover:fill-rose-500 transition-colors shadow-lg animate-pulse" />
                 <text y="5" textAnchor="middle" fill="#ffffff" className="text-[10px] font-bold font-mono">AST-001</text>
-                <text y="52" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold text-zinc-800 dark:text-zinc-300">Payment Gateway API</text>
+                <text y="52" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold font-display text-zinc-800 dark:text-zinc-300">Payment Gateway</text>
               </g>
 
               {/* Node 3: Customer DB */}
               <g transform="translate(600, 225)" className="cursor-pointer group" onClick={() => setSelectedAsset(assets[2])}>
-                <circle r="40" fill="#db2777" className="group-hover:fill-pink-500 transition-colors shadow animate-pulse" />
+                <circle r="40" fill="#db2777" className="group-hover:fill-pink-500 transition-colors shadow-lg" />
                 <text y="5" textAnchor="middle" fill="#ffffff" className="text-[10px] font-bold font-mono">AST-003</text>
-                <text y="56" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold text-zinc-800 dark:text-zinc-300">Customer DB</text>
+                <text y="56" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold font-display text-zinc-800 dark:text-zinc-300">Customer DB</text>
               </g>
 
               {/* Node 4: Active Directory */}
               <g transform="translate(400, 325)" className="cursor-pointer group" onClick={() => setSelectedAsset(assets[3])}>
-                <circle r="30" fill="#4f46e5" className="group-hover:fill-indigo-500 transition-colors shadow" />
+                <circle r="30" fill="#4f46e5" className="group-hover:fill-indigo-500 transition-colors shadow-lg" />
                 <text y="5" textAnchor="middle" fill="#ffffff" className="text-[10px] font-bold font-mono">AST-004</text>
-                <text y="48" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold text-zinc-800 dark:text-zinc-300">Active Directory</text>
+                <text y="48" textAnchor="middle" fill="currentColor" className="text-[11px] font-bold font-display text-zinc-800 dark:text-zinc-300">Active Directory</text>
               </g>
             </svg>
             
             {/* Quick overlay card */}
             {selectedAsset && (
-              <div className="absolute bottom-4 right-4 bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-lg w-72 text-xs space-y-1.5 transition-all">
+              <div className="absolute bottom-4 right-4 bg-white/95 dark:bg-[#0D1117]/95 border border-zinc-200 dark:border-[#26324B] p-4 rounded-xl shadow-2xl w-72 text-xs space-y-1.5 transition-all backdrop-blur-md">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-zinc-950 dark:text-zinc-50">{selectedAsset.name}</span>
-                  <span className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-[9px]">{selectedAsset.id}</span>
+                  <span className="font-bold font-display text-zinc-950 dark:text-zinc-50">{selectedAsset.name}</span>
+                  <span className="px-1.5 py-0.5 bg-zinc-100 dark:bg-[#161B26] border border-zinc-200 dark:border-[#1E2638] rounded font-mono text-[9px] font-bold">{selectedAsset.id}</span>
                 </div>
-                <div>Criticality: <span className="font-bold text-amber-600">{selectedAsset.criticality}</span></div>
-                <div>Service: <span className="font-medium text-zinc-500">{selectedAsset.businessService}</span></div>
-                <div className="pt-1 flex justify-between items-center">
+                <div>Criticality: <span className="font-bold font-mono text-amber-500">{selectedAsset.criticality}</span></div>
+                <div>Service: <span className="font-medium text-zinc-400">{selectedAsset.businessService}</span></div>
+                <div className="pt-1 flex justify-between items-center border-t border-zinc-100 dark:border-[#1C2333]">
                   <span className="text-zinc-400 font-mono">EAL: ₹{(calculateAssetFinancialImpact(selectedAsset)/100000).toFixed(0)}L</span>
-                  <button onClick={() => setSelectedAsset(null)} className="text-blue-500 hover:underline">Close</button>
+                  <button onClick={() => setSelectedAsset(null)} className="text-cyan-400 hover:underline font-bold cursor-pointer">Close</button>
                 </div>
               </div>
             )}

@@ -175,42 +175,44 @@ export default function AnalystChat() {
   };
 
   return (
-    <div className="bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm flex flex-col h-[640px] overflow-hidden transition-theme max-w-4xl mx-auto">
+    <div className="bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] rounded-xl shadow-sm flex flex-col h-[640px] overflow-hidden transition-theme max-w-4xl mx-auto">
       {/* Header */}
-      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-            <Bot className="w-5 h-5" />
+      <div className="p-4 md:p-6 border-b border-zinc-200 dark:border-[#1E2638] flex justify-between items-center bg-zinc-50/50 dark:bg-[#121824]/50">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              GROUNDED LLM ADVISOR
+            </span>
           </div>
-          <div>
-            <h2 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5">
-              AI Cyber Risk Analyst <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500 animate-pulse" />
-            </h2>
-            <p className="text-[10px] text-zinc-400 font-semibold uppercase">Grounded Intelligence • Zero Hallucination</p>
-          </div>
+          <h1 className="text-xl md:text-2xl font-display font-bold text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
+            <Bot className="w-5 h-5 text-cyan-400" /> AI Risk Analyst
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-0.5">
+            Strictly grounded deterministic advisor for risk calculations, business units, and budget allocations.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Grounded in {assets.length} assets</span>
+        <div className="flex items-center gap-2 font-mono text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>REALTIME TELEMETRY ACTIVE</span>
         </div>
       </div>
 
-      {/* Message area */}
+      {/* Messages area */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 text-xs leading-relaxed max-w-[85%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
             <div className={`p-2 rounded-lg flex-shrink-0 h-fit ${
               msg.sender === 'user' 
-                ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300' 
-                : 'bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border border-blue-100 dark:border-blue-900/20'
+                ? 'bg-zinc-100 dark:bg-[#1E2638] text-zinc-800 dark:text-zinc-300' 
+                : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
             }`}>
               {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
             </div>
             <div className={`p-3.5 rounded-xl border ${
               msg.sender === 'user'
-                ? 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium'
-                : 'bg-white dark:bg-[#09090b] border-zinc-200 dark:border-zinc-800/80 text-zinc-800 dark:text-zinc-200 shadow-sm'
+                ? 'bg-zinc-50 dark:bg-[#121824] border-zinc-200 dark:border-[#1E2638] text-zinc-900 dark:text-zinc-100 font-medium'
+                : 'bg-white dark:bg-[#0D1117] border-zinc-200 dark:border-[#26324B] text-zinc-800 dark:text-zinc-200 shadow-sm'
             }`}>
               <div dangerouslySetInnerHTML={{ __html: msg.text }} />
             </div>
@@ -219,11 +221,11 @@ export default function AnalystChat() {
 
         {isTyping && (
           <div className="flex gap-3 text-xs max-w-[85%]">
-            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 border border-blue-100 dark:border-blue-900/20">
+            <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Bot className="w-4 h-4" />
             </div>
-            <div className="p-3 rounded-xl bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 text-zinc-400 text-xs italic flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-bounce" />
+            <div className="p-3 rounded-xl bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#1E2638] text-zinc-400 text-xs italic flex items-center gap-2 font-mono">
+              <span className="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-bounce" />
               <span>Querying live deterministic risk engines...</span>
             </div>
           </div>
@@ -235,13 +237,13 @@ export default function AnalystChat() {
       {/* Preset prompts */}
       {messages.length === 1 && (
         <div className="px-6 pb-2 space-y-2">
-          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Suggested Questions</span>
+          <span className="text-[10px] font-bold font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">Suggested Queries</span>
           <div className="flex flex-wrap gap-2">
             {starterQuestions.map((q, i) => (
               <button
                 key={i}
                 onClick={() => handleSend(q)}
-                className="text-[11px] bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-zinc-600 dark:text-zinc-300 transition-colors text-left cursor-pointer font-medium"
+                className="text-[11px] bg-zinc-50 dark:bg-[#121824] hover:bg-zinc-100 dark:hover:bg-[#1E2638] border border-zinc-200 dark:border-[#1E2638] hover:border-cyan-500/40 rounded-lg px-3 py-1.5 text-zinc-600 dark:text-zinc-300 transition-all text-left cursor-pointer font-medium font-mono"
               >
                 {q}
               </button>
@@ -251,7 +253,7 @@ export default function AnalystChat() {
       )}
 
       {/* Input panel */}
-      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/20">
+      <div className="p-4 border-t border-zinc-200 dark:border-[#1E2638] bg-zinc-50 dark:bg-[#121824]/40">
         <form 
           onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
           className="flex gap-2"
@@ -259,13 +261,13 @@ export default function AnalystChat() {
           <input
             type="text"
             placeholder="Ask a question about your cyber risk, EAL, or budget optimization..."
-            className="flex-1 bg-white dark:bg-[#09090b] border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2.5 text-xs text-zinc-950 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-white dark:bg-[#0D1117] border border-zinc-200 dark:border-[#26324B] rounded-lg px-4 py-2.5 text-xs text-zinc-950 dark:text-zinc-100 font-mono focus:outline-none focus:border-cyan-500"
             value={input}
             onChange={e => setInput(e.target.value)}
           />
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer font-semibold text-xs gap-1.5 shadow-sm"
+            className="bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center cursor-pointer font-mono font-bold text-xs gap-1.5 shadow-sm"
           >
             <span>Ask</span>
             <Send className="w-3.5 h-3.5" />

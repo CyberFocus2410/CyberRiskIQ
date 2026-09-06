@@ -31,12 +31,13 @@ export default function Dashboard({ setActiveTab }) {
   const [drilldownAsset, setDrilldownAsset] = useState(null);
   const [drilldownEalData, setDrilldownEalData] = useState(null);
 
-  // Fetch current stats and baseline active stats
-  const simulatedStats = getEnterpriseStats();
-  const baselineStats = getActiveStats();
+  const simulatedStats = getEnterpriseStats() || {};
+  const baselineStats = getActiveStats() || {};
 
-  const formattedRevenue = (org.annualRevenue / 10000000).toFixed(1) + ' Cr';
-  const formattedBudget = (org.budget / 100000).toFixed(1) + ' Lakh';
+  const revVal = org.annualRevenue || org.annual_revenue || 500000000;
+  const budgetVal = org.budget || 3500000;
+  const formattedRevenue = (revVal / 10000000).toFixed(1) + ' Cr';
+  const formattedBudget = (budgetVal / 100000).toFixed(1) + ' Lakh';
 
   // Format currency in Indian Rupees notation
   const formatCurrency = (val) => {
@@ -87,10 +88,11 @@ export default function Dashboard({ setActiveTab }) {
   const chartOptions = useMemo(() => {
     const points = [];
     const steps = [0, 500000, 1000000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 7500000];
+    const baseEal = baselineStats?.eal || baselineStats?.total_eal || baselineStats?.totalEal || 32500000;
     
     steps.forEach(b => {
       const res = solveOptimization(b);
-      const remainingEal = Math.max(0, baselineStats.eal - res.totalReduction);
+      const remainingEal = Math.max(0, baseEal - (res?.totalReduction || 0));
       points.push({
         budget: b / 100000, // in Lakhs
         eal: remainingEal / 100000 // in Lakhs
@@ -227,11 +229,11 @@ export default function Dashboard({ setActiveTab }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div 
           onClick={() => handleOpenDrilldown(null)}
-          className="bg-white dark:bg-[#0c0c0f] p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all hover:border-blue-500 cursor-pointer group flex items-center justify-between"
+          className="bg-white dark:bg-[#0D1117] p-5 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-all hover:border-cyan-500 cursor-pointer group flex items-center justify-between"
         >
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-              Total Financial Exposure <Info className="w-3 h-3 text-zinc-400 group-hover:text-blue-500" />
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1 font-display">
+              Total Financial Exposure <Info className="w-3 h-3 text-zinc-400 group-hover:text-cyan-400" />
             </span>
             <div className="text-2xl font-extrabold text-zinc-950 dark:text-zinc-50 font-mono">
               {formatCurrency(simulatedStats.exposure)}
@@ -240,25 +242,25 @@ export default function Dashboard({ setActiveTab }) {
               <TrendingUp className="w-3.5 h-3.5 text-zinc-400" /> Max potential impact if all assets breached
             </p>
           </div>
-          <div className="p-3 bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl">
+          <div className="p-3 bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-xl border border-red-500/20">
             <ShieldAlert className="w-6 h-6" />
           </div>
         </div>
 
         <div 
           onClick={() => handleOpenDrilldown(assets[0])}
-          className="bg-white dark:bg-[#0c0c0f] p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all hover:border-blue-500 cursor-pointer group flex items-center justify-between"
+          className="bg-white dark:bg-[#0D1117] p-5 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-all hover:border-cyan-500 cursor-pointer group flex items-center justify-between"
         >
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-              Expected Annual Loss (EAL) <ChevronRight className="w-3 h-3 text-zinc-400 group-hover:text-blue-500" />
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1 font-display">
+              Expected Annual Loss (EAL) <ChevronRight className="w-3 h-3 text-zinc-400 group-hover:text-cyan-400" />
             </span>
             <div className="text-2xl font-extrabold text-zinc-950 dark:text-zinc-50 font-mono">
               {formatCurrency(simulatedStats.eal)}
             </div>
             <p className="text-xs text-zinc-400">
               {simulatedStats.eal < baselineStats.eal ? (
-                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 font-semibold">
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 font-semibold font-mono">
                   <ArrowDownRight className="w-3.5 h-3.5" /> -{((baselineStats.eal - simulatedStats.eal) / baselineStats.eal * 100).toFixed(1)}% simulated reduction
                 </span>
               ) : (
@@ -266,18 +268,18 @@ export default function Dashboard({ setActiveTab }) {
               )}
             </p>
           </div>
-          <div className="p-3 bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-xl">
+          <div className="p-3 bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-500/20">
             <IndianRupee className="w-6 h-6" />
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('quantification')}
-          className="bg-white dark:bg-[#0c0c0f] p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-all hover:border-blue-500 cursor-pointer group flex items-center justify-between"
+          className="bg-white dark:bg-[#0D1117] p-5 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-all hover:border-cyan-500 cursor-pointer group flex items-center justify-between"
         >
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-              Enterprise Risk Score <ChevronRight className="w-3 h-3 text-zinc-400 group-hover:text-blue-500" />
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1 font-display">
+              Enterprise Risk Score <ChevronRight className="w-3 h-3 text-zinc-400 group-hover:text-cyan-400" />
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-black text-zinc-950 dark:text-zinc-50 font-mono">{simulatedStats.riskScore}</span>
@@ -285,7 +287,7 @@ export default function Dashboard({ setActiveTab }) {
             </div>
             <p className="text-xs text-zinc-400">
               {simulatedStats.riskScore < baselineStats.riskScore ? (
-                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 font-semibold">
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 font-semibold font-mono">
                   <ArrowDownRight className="w-3.5 h-3.5" /> Improved from {baselineStats.riskScore}
                 </span>
               ) : (
@@ -293,7 +295,7 @@ export default function Dashboard({ setActiveTab }) {
               )}
             </p>
           </div>
-          <div className="p-3 bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-xl">
+          <div className="p-3 bg-blue-100 dark:bg-blue-950/30 text-blue-600 dark:text-cyan-400 rounded-xl border border-cyan-500/20">
             <Shield className="w-6 h-6" />
           </div>
         </div>
@@ -302,15 +304,19 @@ export default function Dashboard({ setActiveTab }) {
       {/* Main Charts & Details split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 cols: Investment vs Risk Reduction Curve */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme flex flex-col justify-between">
           <div className="h-[300px] w-full">
-            <ReactECharts option={chartOptions} style={{ height: '100%', width: '100%' }} />
+            <ReactECharts 
+              option={chartOptions} 
+              theme={darkMode ? 'cyberriskiq-dark' : 'cyberriskiq-light'}
+              style={{ height: '100%', width: '100%' }} 
+            />
           </div>
-          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4 flex justify-between items-center text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="border-t border-zinc-100 dark:border-[#1C2333] pt-4 mt-4 flex justify-between items-center text-xs text-zinc-500 dark:text-zinc-400 font-mono">
             <span>Optimal Zone recommendation suggests investment around <b>₹20L - ₹30L</b> for maximum efficacy.</span>
             <button 
               onClick={() => setActiveTab('optimizer')}
-              className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 font-semibold cursor-pointer"
+              className="text-cyan-600 dark:text-[#00F0FF] hover:underline flex items-center gap-0.5 font-bold cursor-pointer font-display"
             >
               Analyze Options <ArrowUpRight className="w-3 h-3" />
             </button>
@@ -318,9 +324,9 @@ export default function Dashboard({ setActiveTab }) {
         </div>
 
         {/* Right col: Top validated risks */}
-        <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme flex flex-col justify-between">
           <div className="space-y-4">
-            <h2 className="text-lg font-bold text-zinc-950 dark:text-zinc-50 border-b border-zinc-100 dark:border-zinc-800 pb-2">
+            <h2 className="text-lg font-bold font-display text-zinc-950 dark:text-zinc-50 border-b border-zinc-100 dark:border-[#1C2333] pb-2">
               Top Security Findings
             </h2>
             <div className="space-y-3.5">
@@ -328,26 +334,26 @@ export default function Dashboard({ setActiveTab }) {
                 <div 
                   key={i} 
                   onClick={() => f.assetObj ? handleOpenDrilldown(f.assetObj) : setActiveTab('findings')}
-                  className="flex justify-between items-start gap-3 text-xs border-b border-zinc-100 dark:border-zinc-800 pb-2.5 last:border-0 last:pb-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 p-1.5 rounded transition-colors cursor-pointer"
+                  className="flex justify-between items-start gap-3 text-xs border-b border-zinc-100 dark:border-[#1C2333] pb-2.5 last:border-0 last:pb-0 hover:bg-zinc-50 dark:hover:bg-[#161B26] p-1.5 rounded transition-colors cursor-pointer"
                 >
                   <div className="space-y-1">
                     <span className="font-bold text-zinc-800 dark:text-zinc-200 hover:underline">
                       {f.vulnerability}
                     </span>
-                    <div className="flex gap-2 text-[10px] text-zinc-400">
+                    <div className="flex gap-2 text-[10px] text-zinc-400 font-mono">
                       <span>{f.assetName}</span>
                       <span>•</span>
-                      <span className={f.source.includes('Security Assessment') ? 'text-blue-500 font-semibold' : 'text-zinc-500'}>
+                      <span className={f.source.includes('Security Assessment') ? 'text-cyan-400 font-semibold' : 'text-zinc-500'}>
                         {f.source}
                       </span>
                     </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded font-bold font-mono ${
-                    f.cvss >= 9.0 ? 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400' :
-                    f.cvss >= 7.0 ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400' :
-                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400'
+                  <span className={`px-2 py-0.5 rounded font-bold font-mono text-[10px] ${
+                    f.cvss >= 9.0 ? 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400 border border-red-500/30' :
+                    f.cvss >= 7.0 ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400 border border-orange-500/30' :
+                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400 border border-yellow-500/30'
                   }`}>
-                    {f.cvss.toFixed(1)}
+                    CVSS {f.cvss}
                   </span>
                 </div>
               ))}
@@ -355,7 +361,7 @@ export default function Dashboard({ setActiveTab }) {
           </div>
           <button
             onClick={() => setActiveTab('findings')}
-            className="w-full text-center py-2 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-lg text-xs font-semibold mt-4 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
+            className="w-full text-center py-2 border border-zinc-200 dark:border-[#26324B] hover:bg-zinc-50 dark:hover:bg-[#161B26] rounded-lg text-xs font-bold font-display mt-4 text-zinc-800 dark:text-zinc-200 transition-colors cursor-pointer"
           >
             View All Security Findings
           </button>
@@ -363,23 +369,23 @@ export default function Dashboard({ setActiveTab }) {
       </div>
 
       {/* CISO Actionable Recommendations */}
-      <div className="bg-white dark:bg-[#0c0c0f] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-theme">
-        <h2 className="text-lg font-bold text-zinc-950 dark:text-zinc-50 mb-3.5">CISO Actionable Recommendations</h2>
+      <div className="bg-white dark:bg-[#0D1117] p-6 rounded-xl border border-zinc-200/80 dark:border-[#1E2638] shadow-sm transition-theme">
+        <h2 className="text-lg font-bold font-display text-zinc-950 dark:text-zinc-50 mb-3.5">CISO Actionable Recommendations</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-2 bg-zinc-50/50 dark:bg-zinc-900/30">
-            <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Top Priority Remediation</span>
-            <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">Patch BOLA in Payment API</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">AI Security Assessment validated an active exploit chain on checkout endpoints. Remediate inside 48 hours.</p>
+          <div className="border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4 space-y-2 bg-zinc-50/50 dark:bg-[#121620]">
+            <span className="text-[10px] font-bold font-mono text-cyan-500 uppercase tracking-wider">Top Priority Remediation</span>
+            <h3 className="font-bold font-display text-sm text-zinc-800 dark:text-zinc-200">Patch BOLA in Payment API</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">AI Security Assessment validated an active exploit chain on checkout endpoints. Remediate inside 48 hours.</p>
           </div>
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-2 bg-zinc-50/50 dark:bg-zinc-900/30">
-            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Highest Security ROSI</span>
-            <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">Enforce Multi-Factor Authentication</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Budget optimization yields a <b>{optResult.rosi}% ROSI</b>. Prevents administrative credential replay attacks.</p>
+          <div className="border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4 space-y-2 bg-zinc-50/50 dark:bg-[#121620]">
+            <span className="text-[10px] font-bold font-mono text-emerald-500 uppercase tracking-wider">Highest Security ROSI</span>
+            <h3 className="font-bold font-display text-sm text-zinc-800 dark:text-zinc-200">Enforce Multi-Factor Authentication</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Budget optimization yields a <b>{optResult.rosi}% ROSI</b>. Prevents administrative credential replay attacks.</p>
           </div>
-          <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-2 bg-zinc-50/50 dark:bg-zinc-900/30">
-            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Asset Criticality Gap</span>
-            <h3 className="font-bold text-sm text-zinc-800 dark:text-zinc-200">Encrypt Transaction Database</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Database server holds 250,000 sensitive records. Statutory regulatory liability estimated at <b>₹1.5 Crore</b>.</p>
+          <div className="border border-zinc-200 dark:border-[#1E2638] rounded-xl p-4 space-y-2 bg-zinc-50/50 dark:bg-[#121620]">
+            <span className="text-[10px] font-bold font-mono text-amber-500 uppercase tracking-wider">Asset Criticality Gap</span>
+            <h3 className="font-bold font-display text-sm text-zinc-800 dark:text-zinc-200">Encrypt Transaction Database</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Database server holds 250,000 sensitive records. Statutory regulatory liability estimated at <b>₹1.5 Crore</b>.</p>
           </div>
         </div>
       </div>
