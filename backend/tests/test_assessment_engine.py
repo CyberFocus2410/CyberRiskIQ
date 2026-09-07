@@ -22,7 +22,9 @@ from backend.app.main import app, seed_database_if_empty, DEFAULT_DEMO_ORG_ID
 from backend.app.services.assessment_engine import (
     start_assessment,
     execute_assessment_run,
-    _generate_target_sensitive_raw_output
+    _generate_target_sensitive_raw_output,
+    probe_live_web_target,
+    probe_live_github_target
 )
 from backend.app.services.report_pipeline import generate_quantitative_report
 
@@ -207,6 +209,47 @@ class TestAssessmentEngineAndReporting(unittest.TestCase):
         self.assertFalse(res_json["success"])
         self.assertEqual(res_json["status"], "failed")
         self.assertNotIn("results", res_json)
+
+    def test_live_probe_web_target_cardiac_analyst(self):
+        """
+        TASK REQUIREMENT:
+        Test real live reconnaissance and vulnerability detection on Cardiac Analyst Vercel app.
+        Verifies actual HTTP response, CORS wildcard detection, missing CSP, and accurate TLS probing.
+        """
+        target = "https://cardiac-analyst-kappa.vercel.app/"
+        raw_output = probe_live_web_target(target)
+        self.assertEqual(raw_output["mode"], "LIVE")
+        self.assertGreater(len(raw_output["endpoints_discovered"]), 0)
+        self.assertGreater(len(raw_output["services_identified"]), 0)
+        self.assertGreater(len(raw_output["execution_traces"]), 0)
+
+        finding_titles = [f["title"] for f in raw_output["raw_findings"]]
+        # Real HTTP response returns Access-Control-Allow-Origin: *
+        self.assertTrue(any("CORS" in t for t in finding_titles))
+        # Real HTTP response is missing Content-Security-Policy
+        self.assertTrue(any("Content Security Policy" in t or "CSP" in t for t in finding_titles))
+
+    def test_live_probe_github_target_zeroday(self):
+        """
+        TASK REQUIREMENT:
+        Test real live reconnaissance and security auditing of DarkShadow-codex/ZeroDay repo.
+        Verifies GitHub API query, directory tree inspection, container sandbox privileges, and CI/CD audit.
+        """
+        target = "https://github.com/DarkShadow-codex/ZeroDay"
+        raw_output = probe_live_github_target(target)
+        self.assertEqual(raw_output["mode"], "LIVE")
+        self.assertGreater(len(raw_output["endpoints_discovered"]), 0)
+        self.assertGreater(len(raw_output["services_identified"]), 0)
+        
+        # Verify discovered paths reflect the real repo
+        endpoints_str = " ".join(raw_output["endpoints_discovered"])
+        self.assertTrue("containers" in endpoints_str or "zeroday" in endpoints_str or "DarkShadow-codex" in endpoints_str)
+
+        finding_titles = [f["title"] for f in raw_output["raw_findings"]]
+        # Container sandbox passwordless sudo in entrypoint
+        self.assertTrue(any("Container" in t or "Privilege Escalation" in t for t in finding_titles))
+        # Agent toolchain execution or CI/CD permissions
+        self.assertTrue(any("Shell" in t or "CI/CD" in t or "Key" in t for t in finding_titles))
 
 if __name__ == "__main__":
     unittest.main()
