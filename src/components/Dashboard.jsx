@@ -215,11 +215,11 @@ export default function Dashboard({ setActiveTab }) {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">Executive Risk Dashboard</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-            Real-time quantified cyber risk aggregated for <span className="font-semibold text-zinc-800 dark:text-zinc-200">{org.name}</span> across {assets.length} IT/OT assets.
+            Real-time quantified cyber risk aggregated for <span className="font-semibold text-zinc-800 dark:text-zinc-200">{org?.name || 'Organization'}</span> across {assets?.length || 0} IT/OT assets.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-semibold bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-2.5 font-mono">
-          <div>BU: <span className="text-blue-500">{org.businessUnits.length}</span></div>
+          <div>BU: <span className="text-blue-500">{(org?.businessUnits || []).length}</span></div>
           <div className="border-l border-zinc-200 dark:border-zinc-800 pl-2">Revenue: <span className="text-blue-500">{formattedRevenue}</span></div>
           <div className="border-l border-zinc-200 dark:border-zinc-800 pl-2">Budget: <span className="text-blue-500">{formattedBudget}</span></div>
         </div>

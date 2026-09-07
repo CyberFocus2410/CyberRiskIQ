@@ -12,7 +12,7 @@ export default function AssetInventory() {
     name: '',
     type: 'Application',
     owner: '',
-    businessUnit: org.businessUnits[0] || 'Core Banking & Payments',
+    businessUnit: org?.businessUnits?.[0] || 'Core Banking & Payments',
     criticality: 'Medium',
     dataSensitivity: 'Medium',
     internetExposure: 'No',
@@ -41,7 +41,7 @@ export default function AssetInventory() {
       name: '',
       type: 'Application',
       owner: '',
-      businessUnit: org.businessUnits[0] || 'Core Banking & Payments',
+      businessUnit: org?.businessUnits?.[0] || 'Core Banking & Payments',
       criticality: 'Medium',
       dataSensitivity: 'Medium',
       internetExposure: 'No',
@@ -193,7 +193,7 @@ export default function AssetInventory() {
                       value={newAsset.businessUnit}
                       onChange={e => setNewAsset({...newAsset, businessUnit: e.target.value})}
                     >
-                      {org.businessUnits.map(bu => (
+                      {(org?.businessUnits || ['Core Banking & Payments']).map(bu => (
                         <option key={bu} value={bu}>{bu}</option>
                       ))}
                     </select>
@@ -400,7 +400,7 @@ export default function AssetInventory() {
               <div className="border-t border-zinc-100 dark:border-[#1C2333] pt-4">
                 <h3 className="text-xs font-bold font-display text-zinc-950 dark:text-zinc-50 mb-2 uppercase tracking-wide">Controls Posture</h3>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  {Object.entries(selectedAsset.controls).map(([key, val]) => (
+                  {Object.entries(selectedAsset.controls || {}).map(([key, val]) => (
                     <div key={key} className="bg-zinc-50 dark:bg-[#121620] border border-zinc-200 dark:border-[#1E2638] p-2 rounded-lg flex justify-between items-center">
                       <span className="uppercase text-[9px] text-zinc-400 font-mono font-bold">{key}</span>
                       <span className={`font-mono font-bold ${val >= 75 ? 'text-emerald-500' : val >= 45 ? 'text-amber-400' : 'text-rose-500'}`}>
