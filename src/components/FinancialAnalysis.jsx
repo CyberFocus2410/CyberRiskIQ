@@ -33,7 +33,8 @@ export default function FinancialAnalysis() {
     const data = {};
     assets.forEach(asset => {
       const eal = calculateAssetEAL(asset);
-      data[asset.businessUnit] = (data[asset.businessUnit] || 0) + eal;
+      const bu = asset.businessUnit || 'General';
+      data[bu] = (data[bu] || 0) + eal;
     });
 
     return Object.entries(data).map(([name, value]) => ({
@@ -50,8 +51,8 @@ export default function FinancialAnalysis() {
     let recovery = 0;
     let reputation = 0;
 
-    const revScaler = (org.annualRevenue || 500000000) / 500000000;
-    const empScaler = (org.employees || 1200) / 1200;
+    const revScaler = (org?.annualRevenue || org?.annual_revenue || 500000000) / 500000000;
+    const empScaler = (org?.employees || 1200) / 1200;
 
     assets.forEach(a => {
       const riskScore = calculateAssetRiskScore(a);

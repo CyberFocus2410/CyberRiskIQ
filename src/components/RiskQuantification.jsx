@@ -19,7 +19,7 @@ export default function RiskQuantification() {
         return {
           ...a,
           controls: {
-            ...a.controls,
+            ...(a.controls || {}),
             [controlKey]: numericVal
           }
         };
@@ -29,7 +29,7 @@ export default function RiskQuantification() {
     setEditingAsset(prev => ({
       ...prev,
       controls: {
-        ...prev.controls,
+        ...(prev?.controls || {}),
         [controlKey]: numericVal
       }
     }));
@@ -87,12 +87,12 @@ export default function RiskQuantification() {
                   <div className="border-t border-zinc-100 dark:border-[#1E2638] pt-3">
                     <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase font-mono tracking-wider font-bold block mb-2">Controls Coverage</span>
                     <div className="grid grid-cols-3 gap-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">MFA: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls.mfa}%</span></div>
-                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">Patch: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls.patching}%</span></div>
-                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">EDR: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls.edr}%</span></div>
-                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">Seg: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls.segmentation}%</span></div>
-                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">SOC: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls.monitoring}%</span></div>
-                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">Backup: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls.backup}%</span></div>
+                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">MFA: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls?.mfa ?? 0}%</span></div>
+                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">Patch: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls?.patching ?? 0}%</span></div>
+                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">EDR: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls?.edr ?? 0}%</span></div>
+                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">Seg: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls?.segmentation ?? 0}%</span></div>
+                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">SOC: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls?.monitoring ?? 0}%</span></div>
+                      <div className="bg-zinc-50 dark:bg-[#121824] px-2 py-1 rounded border border-zinc-100 dark:border-[#1E2638]">Backup: <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{asset.controls?.backup ?? 0}%</span></div>
                     </div>
                   </div>
 
@@ -126,7 +126,7 @@ export default function RiskQuantification() {
                 </h3>
 
                 <div className="space-y-3.5 text-xs font-medium">
-                  {Object.entries(editingAsset.controls).map(([key, val]) => (
+                  {Object.entries(editingAsset.controls || {}).map(([key, val]) => (
                     <div key={key} className="space-y-1.5 bg-zinc-50 dark:bg-[#121824] p-3 rounded-lg border border-zinc-100 dark:border-[#1E2638]">
                       <div className="flex justify-between items-center">
                         <label className="uppercase text-[10px] font-mono text-zinc-500 dark:text-zinc-400 font-bold">{key}</label>
