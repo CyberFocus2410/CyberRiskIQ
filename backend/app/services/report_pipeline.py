@@ -135,9 +135,22 @@ def generate_quantitative_report(
     normalized_findings = []
     raw_findings = raw_engine_output.get("raw_findings", [])
     
+    # 1. Determine target default asset ID:
+    # Match explicitly against assets_context if target matches an asset name/id
+    matching_asset_id = None
+    if assets_context:
+        for a in assets_context:
+            a_name = (a.get("name") or "").lower()
+            a_id = (a.get("id") or "").lower()
+            if a_id == target.lower() or (a_name and (a_name in target.lower() or target.lower() in a_name)):
+                matching_asset_id = a.get("id")
+                break
+    
+    target_default_asset = matching_asset_id or "AST-TARGET"
+    
     for idx, rf in enumerate(raw_findings):
-        f_id = rf.get("id") or f"FND-SCAN-{run_id[-4:].upper()}-{idx+1:02d}"
-        asset_id = rf.get("asset_id") or rf.get("assetId") or "AST-001"
+        f_id = rf.get("id") or f"fnd-{idx+1:03d}"
+        asset_id = rf.get("asset_id") or rf.get("assetId") or target_default_asset
         severity = str(rf.get("severity", "Medium")).capitalize()
         cvss = float(rf.get("cvss", rf.get("cvss_score", 5.0)))
         cvss_vector = rf.get("cvss_vector") or "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
@@ -151,8 +164,14 @@ def generate_quantitative_report(
         else:
             exploit_available = bool(exploit_available is True or exploit_available == "Yes")
         
-        # Pull internet exposure strictly from asset inventory
-        internet_exposed = resolve_asset_internet_exposure(asset_id, assets_context, org_id=org_id)
+        # Determine internet exposure: if finding already explicitly defines it or target is web URL, preserve True
+        finding_exp = rf.get("internet_exposed")
+        if finding_exp is not None:
+            internet_exposed = bool(finding_exp is True or finding_exp == "Yes")
+        elif target.startswith("http://") or target.startswith("https://"):
+            internet_exposed = True
+        else:
+            internet_exposed = resolve_asset_internet_exposure(asset_id, assets_context, org_id=org_id)
         
         cwe_id = rf.get("cwe_id") or rf.get("cwe") or "CWE-200"
         cve_id = rf.get("cve_id") or rf.get("cve") or "CVE-2026-NVD-PENDING"
@@ -258,18 +277,21 @@ def generate_quantitative_report(
             }
 
     # If no existing asset context matched, create dynamic asset node for target
-    primary_asset_id = "AST-TARGET"
+    primary_asset_id = target_default_asset if target_default_asset != "AST-TARGET" else "AST-TARGET"
     if primary_asset_id not in assets_map:
+        is_payment = any(k in target.lower() for k in ["payment", "checkout", "wire", "pay", "card", "bank", "billing"])
+        is_health = any(k in target.lower() for k in ["cardiac", "health", "medical", "ecg", "patient", "clinic"])
+
         assets_map[primary_asset_id] = {
             "id": primary_asset_id,
             "name": f"Scan Target: {target}",
-            "criticality": "Critical" if "payment" in target.lower() or "auth" in target.lower() else "High",
+            "criticality": "Critical" if (is_payment or is_health or "auth" in target.lower()) else "High",
             "type": "Web API / Service" if target.startswith("http") else "Application Source",
-            "downtime_cost_per_hour": 100000.0 if "payment" in target.lower() else 50000.0,
-            "records_exposed": 25000 if "data" in target.lower() or "payment" in target.lower() else 8000,
-            "cost_per_record": 180.0,
-            "regulatory_penalty": 750000.0,
-            "recovery_cost": 400000.0,
+            "downtime_cost_per_hour": 150000.0 if is_payment else (250000.0 if is_health else 75000.0),
+            "records_exposed": 50000 if is_payment else (85000 if is_health else 15000),
+            "cost_per_record": 250.0 if is_payment else (350.0 if is_health else 150.0),
+            "regulatory_penalty": 2000000.0 if is_payment else (5000000.0 if is_health else 1000000.0),
+            "recovery_cost": 800000.0 if is_payment else (1200000.0 if is_health else 400000.0),
             "findings": []
         }
 
@@ -359,12 +381,62 @@ def generate_quantitative_report(
             ]
         })
 
+    # Fallback to direct calculation on the primary target asset if no mapped evaluations
+    if not asset_financial_quantifications:
+        target_meta = assets_map.get(primary_asset_id) or assets_map.get("AST-TARGET", {
+            "downtime_cost_per_hour": 75000.0,
+            "records_exposed": 10000,
+            "cost_per_record": 150.0,
+            "regulatory_penalty": 500000.0,
+            "recovery_cost": 300000.0,
+            "name": f"Scan Target: {target}"
+        })
+        risk_score = 75.0 if normalized_findings else 20.0
+        lef = round(min(0.95, max(0.05, (risk_score / 100.0) ** 1.6)), 3)
+        dt_loss = float(target_meta.get("downtime_cost_per_hour", 75000.0)) * (12.0 if risk_score > 75 else 4.0)
+        db_loss = float(target_meta.get("records_exposed", 10000)) * float(target_meta.get("cost_per_record", 150.0))
+        reg_loss = float(target_meta.get("regulatory_penalty", 500000.0)) * (1.0 if risk_score > 70 else 0.4)
+        rec_loss = float(target_meta.get("recovery_cost", 300000.0))
+        rep_loss = (dt_loss + db_loss) * 0.25
+        total_loss_magnitude = dt_loss + db_loss + reg_loss + rec_loss + rep_loss
+        total_eal = round(lef * total_loss_magnitude, 2)
+        total_potential_loss = total_loss_magnitude
+        asset_financial_quantifications.append({
+            "asset_id": primary_asset_id,
+            "asset_name": target_meta.get("name", f"Scan Target: {target}"),
+            "loss_event_frequency": lef,
+            "total_potential_loss": round(total_loss_magnitude, 2),
+            "expected_annual_loss": total_eal,
+            "loss_breakdown": {
+                "downtime_loss": round(dt_loss, 2),
+                "data_breach_loss": round(db_loss, 2),
+                "regulatory_loss": round(reg_loss, 2),
+                "recovery_loss": round(rec_loss, 2),
+                "reputation_loss": round(rep_loss, 2)
+            },
+            "financial_driver_citations": [
+                f"Loss Event Frequency calibrated at {lef * 100:.1f}% annualized based on target risk score {risk_score}",
+                f"Target records exposed estimated at {target_meta.get('records_exposed', 10000):,} records",
+                f"Estimated critical downtime disruption: ₹{target_meta.get('downtime_cost_per_hour', 75000):,.0f}/hr"
+            ]
+        })
+
+    # Calculate overall aggregate loss breakdown
+    aggregate_loss_breakdown = {
+        "downtime_loss": round(sum(a["loss_breakdown"]["downtime_loss"] for a in asset_financial_quantifications), 2),
+        "data_breach_loss": round(sum(a["loss_breakdown"]["data_breach_loss"] for a in asset_financial_quantifications), 2),
+        "regulatory_loss": round(sum(a["loss_breakdown"]["regulatory_loss"] for a in asset_financial_quantifications), 2),
+        "recovery_loss": round(sum(a["loss_breakdown"]["recovery_loss"] for a in asset_financial_quantifications), 2),
+        "reputation_loss": round(sum(a["loss_breakdown"]["reputation_loss"] for a in asset_financial_quantifications), 2),
+    }
+
     stage_5_financial_eal = {
         "stage": 5,
         "name": "FAIR Financial EAL Loss Quantification",
         "currency": "INR (₹)",
         "total_enterprise_eal": round(total_eal, 2),
         "total_single_event_exposure": round(total_potential_loss, 2),
+        "loss_breakdown": aggregate_loss_breakdown,
         "asset_quantifications": asset_financial_quantifications
     }
 
@@ -405,6 +477,7 @@ def generate_quantitative_report(
             "medium_count": sum(1 for f in normalized_findings if f["severity"] == "Medium"),
             "baseline_annual_loss_exposure": round(total_eal, 2),
             "max_single_loss_exposure": round(total_potential_loss, 2),
+            "loss_breakdown": aggregate_loss_breakdown,
             "budget_available": budget,
             "overall_health": "Urgent Remediation Required" if any(f["severity"] == "Critical" for f in normalized_findings) else "Cautionary Exposure",
             "prioritized_recommendations": recommendations
@@ -433,6 +506,7 @@ def generate_quantitative_report(
         ],
         "findings": normalized_findings,
         "summary": stage_6_rollup["summary"],
+        "loss_breakdown": aggregate_loss_breakdown,
         "recommendations": recommendations,
         "prioritized_recommendations": recommendations
     }
