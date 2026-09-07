@@ -40,9 +40,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [viewState, setViewState] = useState('cover'); // 'cover' | 'landing' | 'app'
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { darkMode, setDarkMode, org, tenantId } = useRisk();
+  const { darkMode, setDarkMode, org, tenantId, loadDemoData } = useRisk();
 
-  const isOnboarded = org?.onboarding_completed || org?.onboardingCompleted;
+  const isOnboarded = Boolean(org?.onboarding_completed || org?.onboardingCompleted);
 
   // Apply dark mode styling class
   useEffect(() => {
@@ -66,12 +66,9 @@ export default function App() {
     { id: 'settings', label: '10. Workspace Settings', icon: Settings }
   ];
 
-  const renderActiveView = () => {
-    // If organization has not completed onboarding, show wizard
-    if (!isOnboarded && activeTab !== 'settings') {
-      return <OnboardingWizard onComplete={() => setActiveTab('dashboard')} />;
-    }
+  const [dismissedOnboardingBanner, setDismissedOnboardingBanner] = useState(false);
 
+  const renderActiveView = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard setActiveTab={setActiveTab} />;
       case 'assets': return <AssetInventory />;
@@ -83,6 +80,12 @@ export default function App() {
       case 'optimizer': return <InvestmentOptimizer />;
       case 'reports': return <ComplianceReports />;
       case 'settings': return <SettingsView />;
+      case 'onboarding': return (
+        <OnboardingWizard 
+          onComplete={() => setActiveTab('dashboard')} 
+          onCancel={() => setActiveTab('dashboard')} 
+        />
+      );
       default: return <Dashboard setActiveTab={setActiveTab} />;
     }
   };
@@ -184,7 +187,41 @@ export default function App() {
         </header>
 
         {/* Content View Container */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto print:p-0 print:overflow-visible">
+        <main className="flex-1 p-6 lg:p-8 overflow-y-auto print:p-0 print:overflow-visible space-y-6">
+          {!isOnboarded && !dismissedOnboardingBanner && activeTab !== 'onboarding' && (
+            <div className="bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-cyan-950/40 border border-blue-500/30 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                <span className="text-zinc-200 font-medium">
+                  Welcome to <strong className="text-white">{org?.name || 'your workspace'}</strong>. Setup has not been finalized yet.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setActiveTab('onboarding')}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Open Setup Wizard
+                </button>
+                <button
+                  onClick={async () => {
+                    await loadDemoData();
+                    setDismissedOnboardingBanner(true);
+                  }}
+                  className="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors cursor-pointer"
+                >
+                  Load Demo Data
+                </button>
+                <button
+                  onClick={() => setDismissedOnboardingBanner(true)}
+                  className="p-1 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                  title="Dismiss banner"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
           {renderActiveView()}
         </main>
       </div>
