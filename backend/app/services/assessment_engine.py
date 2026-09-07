@@ -1391,13 +1391,13 @@ def execute_assessment_run(
             "phase": "quantify:completed",
             "progress": 95,
             "status": "running",
-            "message": f"[FAIR-EAL] Baseline Expected Annual Loss calibrated at â‚¹{total_eal:,.2f}",
+            "message": f"[FAIR-EAL] Baseline Expected Annual Loss calibrated at ₹{total_eal:,.2f}",
             "node": {
                 "id": "node-financial-loss",
-                "label": f"EAL Exposure: â‚¹{(total_eal/100000):.1f} Lakh",
+                "label": f"EAL Exposure: ₹{(total_eal/100000):.1f} Lakh",
                 "type": "loss",
                 "status": "quantified",
-                "details": f"Annual Financial Exposure: â‚¹{total_eal:,.2f}"
+                "details": f"Annual Financial Exposure: ₹{total_eal:,.2f}"
             },
             "edge": {
                 "id": "edge-target-loss",

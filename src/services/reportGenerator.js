@@ -324,74 +324,133 @@ export function generateSecurityAssessmentPdf(reportData, runId) {
   // ==========================================
   // SECTION 3: VALIDATED VULNERABILITIES
   // ==========================================
-  checkPageBreak(30);
+  checkPageBreak(35);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
   doc.text('3. Discovered Security Weaknesses & Plain-English Explanations', margin, y);
   y += 6;
 
   findings.forEach((f, idx) => {
-    checkPageBreak(50);
     const sev = (f.severity || 'Medium').toUpperCase();
-    const title = f.title || f.vulnerability || `Security Issue #${idx + 1}`;
-    const cvss = f.cvss || 5.0;
+    const rawTitle = f.title || f.vulnerability || `Security Issue #${idx + 1}`;
+    
+    // Clean, readable title without breaking width
+    let cleanTitle = rawTitle;
+    if (cleanTitle.length > 56) {
+      cleanTitle = cleanTitle.substring(0, 53) + '...';
+    }
+
+    const cvss = Number(f.cvss || 5.0).toFixed(1);
     const owasp = f.owasp_category || 'A05:2021-Security Misconfiguration';
     const cve = f.cve_id || f.cve || 'CVE-Pending';
     const cwe = f.cwe_id || f.cwe || 'CWE-200';
-    const plainEnglish = getPlainEnglishExplanation(title, cwe);
+    const plainEnglish = getPlainEnglishExplanation(rawTitle, cwe);
 
-    // Finding Card Outer
+    const cardPad = margin + 4;
+    const innerWidth = contentWidth - 8;
+
+    // Set fonts BEFORE splitting to guarantee zero text-clipping
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    const splitExplanation = doc.splitTextToSize(plainEnglish, innerWidth - 4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.2);
+    const evidenceText = f.evidence || f.poc_description || 'Validated via automated security probing against target parameters.';
+    const splitEvidence = doc.splitTextToSize(evidenceText, innerWidth - 8);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    const fixText = f.remediation || 'Apply input sanitization, validate authorization tokens on all requests, and upgrade software versions.';
+    const splitFix = doc.splitTextToSize(fixText, innerWidth - 4);
+
+    // Callout box height for technical evidence
+    const evidenceBoxHeight = 4.8 + (splitEvidence.length * 3.3);
+
+    // Strictly computed total card height
+    const cardContentHeight = 7.5 + 3.0 + 3.5 + (splitExplanation.length * 3.4) + 3.0
+      + 3.5 + evidenceBoxHeight + 3.0
+      + 3.5 + (splitFix.length * 3.4) + 4.0;
+
+    checkPageBreak(cardContentHeight + 4);
+
+    // Finding Card Outer Box
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(margin, y, contentWidth, 42, 2, 2, 'FD');
+    doc.roundedRect(margin, y, contentWidth, cardContentHeight, 2, 2, 'FD');
 
     // Finding Card Header
     const isCrit = sev === 'CRITICAL';
-    doc.setFillColor(isCrit ? 254 : 255, isCrit ? 242 : 247, isCrit ? 242 : 237);
-    doc.rect(margin, y, contentWidth, 7, 'F');
+    const isHigh = sev === 'HIGH';
+    doc.setFillColor(isCrit ? 254 : (isHigh ? 255 : 248), isCrit ? 242 : (isHigh ? 247 : 250), isCrit ? 242 : (isHigh ? 237 : 252));
+    doc.rect(margin, y, contentWidth, 7.5, 'F');
 
+    // Severity Pill Badge
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(isCrit ? 185 : 194, isCrit ? 28 : 65, isCrit ? 28 : 12);
-    doc.text(`[${sev}] ${title}`, margin + 3, y + 4.8);
-
     doc.setFontSize(7.5);
-    doc.setTextColor(71, 85, 105);
-    doc.text(`CVSS ${cvss} | ${owasp} | ${cve}`, pageWidth - margin - 65, y + 4.8);
+    doc.setTextColor(isCrit ? 185 : (isHigh ? 194 : 30), isCrit ? 28 : (isHigh ? 65 : 64), isCrit ? 28 : (isHigh ? 12 : 175));
+    doc.text(`[${sev}]`, margin + 3.5, y + 5.0);
 
-    // Body content
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(15, 23, 42);
+    const titleOffset = sev === 'CRITICAL' ? 21 : (sev === 'MEDIUM' ? 20 : 17);
+    doc.text(cleanTitle, margin + titleOffset, y + 5.0);
+
+    // CVSS & CVE on Right
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.8);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`CVSS ${cvss}  |  ${cve}`, pageWidth - margin - 4, y + 5.0, { align: 'right' });
+
+    let cardY = y + 10.5;
+
+    // 1. Business Translation & Impact
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
-    doc.setTextColor(30, 41, 59);
-    doc.text('What this means in plain words:', margin + 3, y + 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(71, 85, 105);
-    const splitExplanation = doc.splitTextToSize(plainEnglish, contentWidth - 6);
-    doc.text(splitExplanation, margin + 3, y + 16);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Business Impact & Operational Meaning:', cardPad, cardY);
+    cardY += 3.8;
 
-    // Evidence
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 41, 59);
-    doc.text('Observed Evidence / PoC:', margin + 3, y + 26);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 116, 139);
-    const evidenceText = f.evidence || f.poc_description || 'Validated via automated security probing against target API parameters.';
-    const splitEvidence = doc.splitTextToSize(evidenceText, contentWidth - 40);
-    doc.text(splitEvidence, margin + 38, y + 26);
-
-    // How to Fix
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(21, 128, 61); // emerald-700
-    doc.text('Recommended Fix:', margin + 3, y + 35);
-    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
     doc.setTextColor(51, 65, 85);
-    const fixText = f.remediation || 'Apply input sanitization, validate authorization tokens on all requests, and upgrade software versions.';
-    const splitFix = doc.splitTextToSize(fixText, contentWidth - 35);
-    doc.text(splitFix, margin + 32, y + 35);
+    doc.text(splitExplanation, cardPad + 2, cardY);
+    cardY += (splitExplanation.length * 3.4) + 3.0;
 
-    y += 46;
+    // 2. Technical Evidence / Proof of Concept Callout Box
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Observed Evidence / Technical Proof of Concept:', cardPad, cardY);
+    cardY += 3.8;
+
+    // Evidence Box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(cardPad, cardY, innerWidth, evidenceBoxHeight, 1.5, 1.5, 'FD');
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.2);
+    doc.setTextColor(30, 41, 59);
+    doc.text(splitEvidence, cardPad + 3, cardY + 3.8);
+    cardY += evidenceBoxHeight + 3.0;
+
+    // 3. Recommended Remediation & Defensive Controls
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(21, 128, 61); // emerald-700
+    doc.text('Recommended Remediation & Defensive Controls:', cardPad, cardY);
+    cardY += 3.8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(30, 41, 59);
+    doc.text(splitFix, cardPad + 2, cardY);
+
+    y += cardContentHeight + 4.5;
   });
 
   // ==========================================
@@ -399,55 +458,68 @@ export function generateSecurityAssessmentPdf(reportData, runId) {
   // ==========================================
   checkPageBreak(35);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
   doc.text('4. Prioritized Remediation Roadmap & Return on Investment (ROSI)', margin, y);
   y += 5;
 
-  const recommendations = summary.prioritized_recommendations || [
-    { priority: 1, action_plan: 'Enforce server-side authorization checks on all payment and customer endpoints', expected_eal_reduction: 9830125, estimated_implementation_cost: 150000, return_on_security_investment_pct: 6453.4 },
-    { priority: 2, action_plan: 'Disable deprecated TLS 1.0/1.1 protocols and enforce TLS 1.3 exclusively', expected_eal_reduction: 9830125, estimated_implementation_cost: 150000, return_on_security_investment_pct: 6453.4 }
-  ];
+  const recommendations = (reportData?.recommendations && reportData.recommendations.length > 0)
+    ? reportData.recommendations
+    : (reportData?.summary?.prioritized_recommendations && reportData.summary.prioritized_recommendations.length > 0)
+      ? reportData.summary.prioritized_recommendations
+      : (reportData?.stages?.[5]?.prioritized_recommendations && reportData.stages[5].prioritized_recommendations.length > 0)
+        ? reportData.stages[5].prioritized_recommendations
+        : findings.map((f, i) => ({
+            priority: i + 1,
+            action_plan: f.remediation || 'Implement defensive controls to mitigate identified finding',
+            expected_eal_reduction: Math.round(totalEal * 0.35 / Math.max(1, findings.length)),
+            estimated_implementation_cost: 120000,
+            return_on_security_investment_pct: 4200
+          }));
 
   // Roadmap Header
   doc.setFillColor(15, 23, 42);
-  doc.rect(margin, y, contentWidth, 6, 'F');
-  doc.setFontSize(7);
+  doc.rect(margin, y, contentWidth, 6.5, 'F');
+  doc.setFontSize(6.8);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.text('Priority', margin + 2, y + 4.2);
-  doc.text('Action Plan & Control Implementation', margin + 18, y + 4.2);
-  doc.text('Loss Reduction (â‚¹)', margin + 105, y + 4.2);
-  doc.text('Cost (â‚¹)', margin + 140, y + 4.2);
-  doc.text('ROSI (%)', margin + 162, y + 4.2);
-  y += 6;
+  doc.text('Priority', margin + 3, y + 4.5);
+  doc.text('Action Plan & Control Implementation', margin + 20, y + 4.5);
+  doc.text('Loss Reduction (Rs.)', margin + 128, y + 4.5, { align: 'right' });
+  doc.text('Cost (Rs.)', margin + 158, y + 4.5, { align: 'right' });
+  doc.text('ROSI (%)', pageWidth - margin - 4, y + 4.5, { align: 'right' });
+  y += 6.5;
 
   recommendations.forEach((rec, idx) => {
     doc.setFillColor(idx % 2 === 0 ? 255 : 248, idx % 2 === 0 ? 255 : 250, idx % 2 === 0 ? 255 : 252);
-    doc.rect(margin, y, contentWidth, 8, 'F');
+    doc.rect(margin, y, contentWidth, 7.5, 'F');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.setTextColor(rec.priority === 1 ? 220 : 15, rec.priority === 1 ? 38 : 23, rec.priority === 1 ? 38 : 42);
-    doc.text(`Priority #${rec.priority || idx + 1}`, margin + 2, y + 5);
+    doc.text(`Priority #${rec.priority || idx + 1}`, margin + 3, y + 4.8);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
     doc.setTextColor(51, 65, 85);
-    const actionPlan = (rec.action_plan || 'Remediate detected vulnerability').substring(0, 58);
-    doc.text(actionPlan, margin + 18, y + 5);
+    let actionPlan = rec.action_plan || 'Remediate detected vulnerability';
+    if (actionPlan.length > 72) {
+      actionPlan = actionPlan.substring(0, 70).replace(/\s+\S*$/, '') + '...';
+    }
+    doc.text(actionPlan, margin + 20, y + 4.8);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
+    doc.setFontSize(6.8);
     doc.setTextColor(21, 128, 61);
-    doc.text(formatShortINR(rec.expected_eal_reduction), margin + 105, y + 5);
+    doc.text(formatShortINR(rec.expected_eal_reduction), margin + 128, y + 4.8, { align: 'right' });
 
     doc.setTextColor(71, 85, 105);
-    doc.text(formatShortINR(rec.estimated_implementation_cost), margin + 140, y + 5);
+    doc.text(formatShortINR(rec.estimated_implementation_cost), margin + 158, y + 4.8, { align: 'right' });
 
     doc.setTextColor(37, 99, 235);
-    doc.text(`+${Math.round(rec.return_on_security_investment_pct || 6450)}%`, margin + 162, y + 5);
+    doc.text(`+${Math.round(rec.return_on_security_investment_pct || 6450)}%`, pageWidth - margin - 4, y + 4.8, { align: 'right' });
 
-    y += 8;
+    y += 7.5;
   });
 
   // Add Page Numbers & Footer to all pages
@@ -455,13 +527,13 @@ export function generateSecurityAssessmentPdf(reportData, runId) {
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setDrawColor(226, 232, 240);
-    doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+    doc.line(margin, pageHeight - 9, pageWidth - margin, pageHeight - 9);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(148, 163, 184);
-    doc.text('CyberRiskIQ â€” Confidential & Proprietary Security Audit Report', margin, pageHeight - 6);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 18, pageHeight - 6);
+    doc.text('CyberRiskIQ — Confidential & Proprietary Security Audit Report', margin, pageHeight - 5);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 18, pageHeight - 5);
   }
 
   // Save PDF file
@@ -469,4 +541,3 @@ export function generateSecurityAssessmentPdf(reportData, runId) {
   doc.save(filename);
   return doc.output('arraybuffer');
 }
-
