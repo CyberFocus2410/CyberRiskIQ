@@ -279,20 +279,21 @@ def probe_live_web_target(target: str) -> Dict[str, Any]:
                 js_content = resp_s.read(1048576).decode("utf-8", errors="ignore")
                 traces.append(f"Deeply inspected client script bundle {s_path} ({len(js_content):,} bytes).")
 
-                # A. Check unencrypted localStorage usage for clinical / patient vitals data
+                # A. Check unencrypted localStorage usage for sensitive data
                 if "localstorage" in js_content.lower():
+                    is_health = any(k in url.lower() for k in ["cardiac", "health", "medical", "analyst", "ecg", "patient"])
                     traces.append("Client Storage Audit: Discovered unencrypted browser localStorage persistence in client bundle.")
                     raw_findings.append({
                         "id": f"FND-STORE-{target_hash[:4].upper()}-01",
-                        "title": "High Severity Unencrypted Patient Health Data (PHI) Stored in Browser LocalStorage",
-                        "vulnerability": "Insecure Client-Side Storage of Patient Health Records in LocalStorage",
+                        "title": "High Severity Unencrypted Patient Health Data (PHI) Stored in Browser LocalStorage" if is_health else "High Severity Unencrypted Sensitive Client State Stored in Browser LocalStorage",
+                        "vulnerability": "Insecure Client-Side Storage of Patient Health Records in LocalStorage" if is_health else "Insecure Client-Side Storage of Sensitive Application Data in LocalStorage",
                         "severity": "High",
                         "cvss": 7.4,
                         "exploit_available": True,
                         "internet_exposed": True,
-                        "evidence": f"Target client bundle ({s_path}) persists patient triage inputs, vitals trends, and screening history into unencrypted browser localStorage without cryptographic encryption.",
-                        "control_state": "Browser localStorage used for sensitive clinical telemetry instead of ephemeral session memory or AES-GCM Web Crypto.",
-                        "remediation": "Store patient screening data in volatile session memory or encrypt client-side with AES-GCM using Web Crypto API.",
+                        "evidence": f"Target client bundle ({s_path}) persists sensitive user session tokens, operational parameters, and state into unencrypted browser localStorage without cryptographic encryption." if not is_health else f"Target client bundle ({s_path}) persists patient triage inputs, vitals trends, and screening history into unencrypted browser localStorage without cryptographic encryption.",
+                        "control_state": "Browser localStorage used for sensitive clinical telemetry instead of ephemeral session memory or AES-GCM Web Crypto." if is_health else "Browser localStorage used for sensitive state persistence without client-side cryptographic sealing.",
+                        "remediation": "Store patient screening data in volatile session memory or encrypt client-side with AES-GCM using Web Crypto API." if is_health else "Store sensitive user parameters in volatile session memory or encrypt client-side with AES-GCM using Web Crypto API.",
                         "poc_attached": True,
                         "cve_id": "CVE-2026-CLIENT-STORAGE",
                         "cwe_id": "CWE-312"
