@@ -25,7 +25,7 @@ const INITIAL_STEPS = [
   { id: 4, label: 'Defensive Controls', icon: ShieldCheck }
 ];
 
-export default function OnboardingWizard({ onComplete }) {
+export default function OnboardingWizard({ onComplete, onCancel }) {
   const { completeOnboarding, loadDemoData, loading } = useRisk();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -253,20 +253,41 @@ export default function OnboardingWizard({ onComplete }) {
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Configure Your CyberRiskIQ Workspace</h1>
           <p className="text-zinc-300 text-xs mt-1">Set up your organization's business context, asset registry, and baseline defense posture.</p>
         </div>
-        <button
-          onClick={handleLoadDemo}
-          disabled={demoLoading}
-          className="flex-shrink-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-        >
-          <Sparkles className="w-4 h-4" />
-          {demoLoading ? 'Seeding Demo...' : 'Load FinSecure Bank Demo (52 Assets)'}
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleLoadDemo}
+            disabled={demoLoading}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4" />
+            {demoLoading ? 'Seeding Demo...' : 'Load FinSecure Bank Demo (52 Assets)'}
+          </button>
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              type="button"
+              className="px-3.5 py-2.5 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl border border-zinc-700 transition-all cursor-pointer"
+            >
+              Exit to Dashboard
+            </button>
+          )}
+        </div>
       </div>
 
       {errorMsg && (
-        <div className="p-4 bg-red-950/40 border border-red-500/40 rounded-xl text-red-300 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-400" />
-          <span>{errorMsg}</span>
+        <div className="p-4 bg-red-950/40 border border-red-500/40 rounded-xl text-red-300 text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-400" />
+            <span>{errorMsg}</span>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setErrorMsg('')}
+            className="text-red-400 hover:text-red-200 font-bold px-2 py-0.5 cursor-pointer"
+            title="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       )}
 
