@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRisk } from '../context/RiskContext';
+import { getStoredTenantId } from '../services/apiClient';
 import Modal from './Modal';
 import { generateSecurityAssessmentPdf } from '../services/reportGenerator';
 import { 
@@ -189,7 +190,10 @@ export default function SecurityAssessmentControl() {
     try {
       const resp = await fetch('/api/assessment/scan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Organization-ID': getStoredTenantId()
+        },
         body: JSON.stringify({ 
           target, 
           mode: assessmentMode,
@@ -244,7 +248,11 @@ export default function SecurityAssessmentControl() {
 
   const fetchFallbackResults = async (activeRunId) => {
     try {
-      const resultResp = await fetch(`/api/assessment/result/${activeRunId}`);
+      const resultResp = await fetch(`/api/assessment/result/${activeRunId}`, {
+        headers: {
+          'X-Organization-ID': getStoredTenantId()
+        }
+      });
       if (resultResp.ok) {
         const res = await resultResp.json();
         if (res.success && res.results) {
@@ -261,7 +269,11 @@ export default function SecurityAssessmentControl() {
   const handleDownloadPdf = async () => {
     if (!runId) return;
     try {
-      const resp = await fetch(`/api/assessment/report/${runId}`);
+      const resp = await fetch(`/api/assessment/report/${runId}`, {
+        headers: {
+          'X-Organization-ID': getStoredTenantId()
+        }
+      });
       if (resp.ok) {
         const data = await resp.json();
         generateSecurityAssessmentPdf(data, runId);
@@ -314,10 +326,16 @@ export default function SecurityAssessmentControl() {
           </span>
         )}
         {status === 'error' && (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-500 font-bold font-mono">
+          <button
+            type="button"
+            onClick={() => { setStatus('idle'); setErrorMessage(''); }}
+            title="Click to reset status"
+            className="flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-[10px] text-rose-500 font-bold font-mono transition-colors cursor-pointer"
+          >
             <AlertTriangle className="w-3 h-3" />
             FAILED
-          </span>
+            <span className="ml-1 text-[9px] opacity-70 hover:opacity-100">✕</span>
+          </button>
         )}
       </div>
 
@@ -413,8 +431,16 @@ export default function SecurityAssessmentControl() {
       </div>
 
       {errorMessage && (
-        <div className="p-2.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-lg text-[11px] text-rose-600 dark:text-rose-400 font-medium leading-relaxed">
-          {errorMessage}
+        <div className="p-2.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-lg text-[11px] text-rose-600 dark:text-rose-400 font-medium leading-relaxed flex items-start justify-between gap-2">
+          <span className="flex-1">{errorMessage}</span>
+          <button
+            type="button"
+            onClick={() => { setErrorMessage(''); if (status === 'error') setStatus('idle'); }}
+            className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-xs leading-none p-0.5 cursor-pointer"
+            title="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       )}
 
